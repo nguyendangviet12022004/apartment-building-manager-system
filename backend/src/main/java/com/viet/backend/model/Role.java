@@ -1,6 +1,7 @@
 package com.viet.backend.model;
 
 public enum Role {
-  USER,
+  RESIDENT,
+  MANAGER,
   ADMIN
 }

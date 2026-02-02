@@ -5,8 +5,6 @@ import com.viet.backend.dto.AuthenticationRequest;
 import com.viet.backend.dto.AuthenticationResponse;
 import com.viet.backend.dto.RegisterRequest;
 import com.viet.backend.mapper.UserMapper;
-import com.viet.backend.model.Role;
-import com.viet.backend.model.User;
 import com.viet.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -27,7 +25,7 @@ public class AuthenticationService {
   public AuthenticationResponse register(RegisterRequest request) {
     var user = userMapper.toEntity(request);
     user.setPassword(passwordEncoder.encode(request.getPassword()));
-    user.setRole(Role.USER);
+    user.setRole(request.getRole());
     repository.save(user);
     var jwtToken = jwtService.generateToken(user);
     return AuthenticationResponse.builder()
@@ -39,9 +37,7 @@ public class AuthenticationService {
     authenticationManager.authenticate(
         new UsernamePasswordAuthenticationToken(
             request.getEmail(),
-            request.getPassword()
-        )
-    );
+            request.getPassword()));
     var user = repository.findByEmail(request.getEmail())
         .orElseThrow();
     var jwtToken = jwtService.generateToken(user);
