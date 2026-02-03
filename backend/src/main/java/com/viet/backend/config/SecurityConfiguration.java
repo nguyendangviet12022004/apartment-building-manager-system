@@ -22,6 +22,8 @@ public class SecurityConfiguration {
   private final JwtAuthenticationFilter jwtAuthFilter;
   private final AuthenticationConfiguration authenticationConfiguration;
 
+  private static final String[] WHITE_LIST = { "/auth/**", "swagger-ui/**", "/v3/api-docs/**" };
+
   @Bean
   AuthenticationManager authenticationManager() throws Exception {
     return authenticationConfiguration.getAuthenticationManager();
@@ -32,7 +34,7 @@ public class SecurityConfiguration {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers("/auth/**").permitAll()
+            .requestMatchers(WHITE_LIST).permitAll()
             .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
