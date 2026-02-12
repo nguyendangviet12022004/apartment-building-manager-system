@@ -3,7 +3,7 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/apartment_manager?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3306/apartment_building_manager_system?createDatabaseIfNotExist=true
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
@@ -19,6 +19,6 @@ spring:
       expiration: 86400000 # 24 hours
 
 cloudinary:
-  cloud-name: ${CLOUDINARY_CLOUD_NAME}
-  api-key: ${CLOUDINARY_API_KEY}
-  api-secret: ${CLOUDINARY_API_SECRET}
+  cloud-name: ${CLOUDINARY_CLOUD_NAME:dnkghao4p}
+  api-key: ${CLOUDINARY_API_KEY:399479765913834}
+  api-secret: ${CLOUDINARY_API_SECRET:kG6ErLLWRvSFnvA9x0S2ln-2G7U}
