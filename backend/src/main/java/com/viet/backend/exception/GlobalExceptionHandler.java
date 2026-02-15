@@ -57,6 +57,39 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(errorResponse, HttpStatus.NOT_FOUND);
     }
 
+    @ExceptionHandler(InvalidCodeException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidCodeException(InvalidCodeException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.BAD_REQUEST.value())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(ExpiredCodeException.class)
+    public ResponseEntity<ErrorResponse> handleExpiredCodeException(ExpiredCodeException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.GONE.value())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.GONE);
+    }
+
+    @ExceptionHandler(ApartmentAlreadyUsedException.class)
+    public ResponseEntity<ErrorResponse> handleApartmentAlreadyUsedException(ApartmentAlreadyUsedException ex) {
+        ErrorResponse errorResponse = ErrorResponse.builder()
+                .status(HttpStatus.CONFLICT.value())
+                .message(ex.getMessage())
+                .timestamp(LocalDateTime.now())
+                .build();
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
+    }
+
     @ExceptionHandler(jakarta.persistence.EntityExistsException.class)
     public ResponseEntity<ErrorResponse> handleEntityExistsException(jakarta.persistence.EntityExistsException ex) {
         ErrorResponse errorResponse = ErrorResponse.builder()

@@ -3,15 +3,25 @@ spring:
     name: backend
 
   datasource:
-    url: jdbc:mysql://localhost:3306/apartment_building_manager_system?createDatabaseIfNotExist=true
+    url: jdbc:mysql://localhost:3000/apartment_building_manager_system?createDatabaseIfNotExist=true
     username: ${DB_USERNAME:root}
     password: ${DB_PASSWORD:123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   jpa:
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     show-sql: true
+
+  mail:
+    host: localhost
+    port: 1025
+    properties:
+      mail:
+        smtp:
+          auth: false
+          starttls:
+            enable: false
 
   security:
     jwt:

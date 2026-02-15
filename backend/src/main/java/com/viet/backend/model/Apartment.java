@@ -21,6 +21,10 @@ public class Apartment {
     private Double area;
     private String status;
 
+    @Builder.Default
+    @Column(nullable = false)
+    private boolean used = false;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "block_id")
     private Block block;

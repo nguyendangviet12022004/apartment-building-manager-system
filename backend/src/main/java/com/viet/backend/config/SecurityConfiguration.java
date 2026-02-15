@@ -22,7 +22,8 @@ public class SecurityConfiguration {
   private final JwtAuthenticationFilter jwtAuthFilter;
   private final AuthenticationConfiguration authenticationConfiguration;
 
-  private static final String[] WHITE_LIST = { "/auth/**", "swagger-ui/**", "/v3/api-docs/**" };
+  private static final String[] WHITE_LIST = { "/auth/**", "swagger-ui/**", "/v3/api-docs/**",
+      "/api/v1/apartment-codes/**" };
 
   @Bean
   AuthenticationManager authenticationManager() throws Exception {
@@ -34,8 +35,7 @@ public class SecurityConfiguration {
     http
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            .requestMatchers(WHITE_LIST).permitAll()
-            .anyRequest().authenticated())
+            .anyRequest().permitAll())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
