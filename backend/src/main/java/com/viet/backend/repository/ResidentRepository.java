@@ -11,7 +11,8 @@ import java.util.Optional;
 public interface ResidentRepository extends JpaRepository<Resident, Long> {
 
     @EntityGraph(attributePaths = { "user" })
-    Optional<Resident> findWithUserByUserId(Integer userId);
+    @org.springframework.data.jpa.repository.Query("SELECT r FROM Resident r WHERE r.user.id = :userId")
+    Optional<Resident> findByUserId(@org.springframework.data.repository.query.Param("userId") Integer userId);
 
     Optional<Resident> findByIdentityCard(String identityCard);
 }

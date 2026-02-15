@@ -16,4 +16,6 @@ public interface ApartmentAccessCodeRepository extends JpaRepository<ApartmentAc
     @Modifying
     @Query("UPDATE ApartmentAccessCode a SET a.isActive = false WHERE a.apartment.id = :apartmentId AND a.isActive = true")
     void deactivateAllByApartmentId(Long apartmentId);
+
+    Optional<ApartmentAccessCode> findByEmailAndApartment_IdAndIsActiveTrue(String email, Long apartmentId);
 }

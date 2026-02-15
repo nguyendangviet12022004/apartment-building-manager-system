@@ -1,12 +1,8 @@
 package com.viet.backend.service;
 
-import com.viet.backend.exception.ApartmentAlreadyUsedException;
-import com.viet.backend.exception.ExpiredCodeException;
-import com.viet.backend.exception.InvalidCodeException;
-import com.viet.backend.model.Apartment;
-import com.viet.backend.model.ApartmentAccessCode;
-import com.viet.backend.repository.ApartmentAccessCodeRepository;
-import com.viet.backend.repository.ApartmentRepository;
+import com.viet.backend.exception.*;
+import com.viet.backend.model.*;
+import com.viet.backend.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -21,6 +17,8 @@ public class ApartmentAccessCodeService {
     private final ApartmentAccessCodeRepository apartmentAccessCodeRepository;
     private final ApartmentRepository apartmentRepository;
     private final EmailService emailService;
+    private final UserRepository userRepository;
+    private final ResidentRepository residentRepository;
 
     @Transactional
     public String generateCode(Long apartmentId, String email) {
@@ -31,6 +29,13 @@ public class ApartmentAccessCodeService {
             throw new ApartmentAlreadyUsedException("Apartment is already occupied and cannot generate new codes");
         }
 
+        // Check if user already exists
+        var userOptional = userRepository.findByEmail(email);
+        if (userOptional.isPresent()) {
+            linkUserToApartment(userOptional.get(), apartment, null, null);
+            return "ALREADY_LINKED";
+        }
+
         // Deactivate all previous codes
         apartmentAccessCodeRepository.deactivateAllByApartmentId(apartmentId);
 
@@ -39,6 +44,7 @@ public class ApartmentAccessCodeService {
 
         ApartmentAccessCode accessCode = ApartmentAccessCode.builder()
                 .code(code)
+                .email(email)
                 .apartment(apartment)
                 .expiryTime(LocalDateTime.now().plusMinutes(5))
                 .isActive(true)
@@ -52,6 +58,32 @@ public class ApartmentAccessCodeService {
         }
 
         return code;
+    }
+
+    @Transactional
+    public void linkUserToApartment(User user, Apartment apartment, String identityCard, String emergencyContact) {
+        // Find or create resident
+        Resident resident = residentRepository.findByUserId(user.getId())
+                .orElseGet(() -> residentRepository.save(Resident.builder()
+                        .user(user)
+                        .identityCard(identityCard)
+                        .emergencyContact(emergencyContact)
+                        .build()));
+
+        // Update identity info if it was missing but provided now
+        if (identityCard != null && (resident.getIdentityCard() == null || resident.getIdentityCard().isEmpty())) {
+            resident.setIdentityCard(identityCard);
+        }
+        if (emergencyContact != null
+                && (resident.getEmergencyContact() == null || resident.getEmergencyContact().isEmpty())) {
+            resident.setEmergencyContact(emergencyContact);
+        }
+        residentRepository.saveAndFlush(resident);
+
+        // Directly update the apartment with the resident (N:1)
+        apartment.setResident(resident);
+        apartment.setUsed(true);
+        apartmentRepository.saveAndFlush(apartment);
     }
 
     @Transactional
@@ -69,14 +101,23 @@ public class ApartmentAccessCodeService {
             throw new ExpiredCodeException("Code has expired");
         }
 
-        // Activate logic: Inactivate the code after successful validation
-        accessCode.setActive(false);
-        apartmentAccessCodeRepository.save(accessCode);
-
-        // Mark apartment as used
+        // Mark apartment as used and link to resident if user exists
         Apartment apartment = accessCode.getApartment();
-        apartment.setUsed(true);
-        apartmentRepository.save(apartment);
+
+        // Try to link user if they registered between code generation and verification
+        if (accessCode.getEmail() != null) {
+            var userOptional = userRepository.findByEmail(accessCode.getEmail());
+            if (userOptional.isPresent()) {
+                linkUserToApartment(userOptional.get(), apartment, null, null);
+
+                // ONLY deactivate if we successfully linked a user
+                accessCode.setActive(false);
+                apartmentAccessCodeRepository.save(accessCode);
+            }
+        }
+        // If no user exists yet, we keep the code ACTIVE so they can register with it
+        // later.
+        // We just return the apartment ID to show it's a valid code.
 
         return apartment.getId();
     }

@@ -24,6 +24,8 @@ public class ApartmentAccessCode {
     @Column(nullable = false)
     private boolean isActive;
 
+    private String email;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "apartment_id", nullable = false)
     private Apartment apartment;

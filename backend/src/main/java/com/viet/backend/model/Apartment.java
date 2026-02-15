@@ -28,4 +28,8 @@ public class Apartment {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "block_id")
     private Block block;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "resident_id")
+    private Resident resident;
 }
