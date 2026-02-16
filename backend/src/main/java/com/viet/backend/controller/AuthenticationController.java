@@ -2,6 +2,7 @@ package com.viet.backend.controller;
 
 import com.viet.backend.dto.AuthenticationRequest;
 import com.viet.backend.dto.AuthenticationResponse;
+import com.viet.backend.dto.ChangePasswordRequest;
 import com.viet.backend.dto.ForgotPasswordRequest;
 import com.viet.backend.dto.RegisterRequest;
 import com.viet.backend.dto.ResetPasswordRequest;
@@ -52,5 +53,11 @@ public class AuthenticationController {
   public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
     passwordResetService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
     return ResponseEntity.ok("Password has been reset successfully");
+  }
+
+  @PostMapping("/password/change")
+  public ResponseEntity<String> changePassword(@Valid @RequestBody ChangePasswordRequest request) {
+    service.changePassword(request);
+    return ResponseEntity.ok("Password has been changed successfully");
   }
 }

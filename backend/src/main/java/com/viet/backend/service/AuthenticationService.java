@@ -3,6 +3,7 @@ package com.viet.backend.service;
 import com.viet.backend.config.JwtService;
 import com.viet.backend.dto.AuthenticationRequest;
 import com.viet.backend.dto.AuthenticationResponse;
+import com.viet.backend.dto.ChangePasswordRequest;
 import com.viet.backend.dto.RegisterRequest;
 import com.viet.backend.mapper.UserMapper;
 import com.viet.backend.repository.ApartmentAccessCodeRepository;
@@ -15,6 +16,7 @@ import com.viet.backend.model.*;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -88,6 +90,21 @@ public class AuthenticationService {
         .accessToken(jwtToken)
         .refreshToken(refreshToken)
         .build();
+  }
+
+  @Transactional
+  public void changePassword(ChangePasswordRequest request) {
+    User user = repository.findByEmail(request.getEmail())
+        .orElseThrow(() -> new RuntimeException("User not found"));
+
+    // Verify old password
+    if (!passwordEncoder.matches(request.getOldPassword(), user.getPassword())) {
+      throw new BadCredentialsException("Bad credentials");
+    }
+
+    // Update with new password
+    user.setPassword(passwordEncoder.encode(request.getNewPassword()));
+    repository.save(user);
   }
 
   private Map<String, Object> getExtraClaims(User user) {
