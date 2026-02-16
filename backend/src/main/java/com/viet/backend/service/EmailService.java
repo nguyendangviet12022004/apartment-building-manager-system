@@ -17,6 +17,14 @@ public class EmailService {
     private final TemplateEngine templateEngine;
 
     public void sendAccessCodeEmail(String to, String code) {
+        sendEmail(to, "Your Apartment Access Code", code, "email-code");
+    }
+
+    public void sendPasswordResetEmail(String to, String code) {
+        sendEmail(to, "Password Reset Verification Code", code, "email-code");
+    }
+
+    private void sendEmail(String to, String subject, String code, String templateName) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
@@ -24,11 +32,11 @@ public class EmailService {
             Context context = new Context();
             context.setVariable("code", code);
 
-            String htmlContent = templateEngine.process("email-code", context);
+            String htmlContent = templateEngine.process(templateName, context);
 
             helper.setText(htmlContent, true);
             helper.setTo(to);
-            helper.setSubject("Your Apartment Access Code");
+            helper.setSubject(subject);
             helper.setFrom("no-reply@apartmentsystem.com");
 
             mailSender.send(mimeMessage);

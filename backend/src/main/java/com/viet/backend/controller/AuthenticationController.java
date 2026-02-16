@@ -2,8 +2,12 @@ package com.viet.backend.controller;
 
 import com.viet.backend.dto.AuthenticationRequest;
 import com.viet.backend.dto.AuthenticationResponse;
+import com.viet.backend.dto.ForgotPasswordRequest;
 import com.viet.backend.dto.RegisterRequest;
+import com.viet.backend.dto.ResetPasswordRequest;
+import com.viet.backend.dto.VerifyCodeRequest;
 import com.viet.backend.service.AuthenticationService;
+import com.viet.backend.service.PasswordResetService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -18,6 +22,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class AuthenticationController {
 
   private final AuthenticationService service;
+  private final PasswordResetService passwordResetService;
 
   @PostMapping("/register")
   public ResponseEntity<AuthenticationResponse> register(
@@ -29,5 +34,23 @@ public class AuthenticationController {
   public ResponseEntity<AuthenticationResponse> authenticate(
       @Valid @RequestBody AuthenticationRequest request) {
     return ResponseEntity.ok(service.authenticate(request));
+  }
+
+  @PostMapping("/password/forgot")
+  public ResponseEntity<String> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+    passwordResetService.generateResetCode(request.getEmail());
+    return ResponseEntity.ok("Verification code sent to email");
+  }
+
+  @PostMapping("/password/verify")
+  public ResponseEntity<String> verifyCode(@Valid @RequestBody VerifyCodeRequest request) {
+    passwordResetService.verifyResetCode(request.getEmail(), request.getCode());
+    return ResponseEntity.ok("Code is valid");
+  }
+
+  @PostMapping("/password/reset")
+  public ResponseEntity<String> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+    passwordResetService.resetPassword(request.getEmail(), request.getCode(), request.getNewPassword());
+    return ResponseEntity.ok("Password has been reset successfully");
   }
 }
