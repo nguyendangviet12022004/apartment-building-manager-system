@@ -9,6 +9,8 @@ import org.springframework.stereotype.Service;
 import org.thymeleaf.TemplateEngine;
 import org.thymeleaf.context.Context;
 
+import java.util.Map;
+
 @Service
 @RequiredArgsConstructor
 public class EmailService {
@@ -17,20 +19,32 @@ public class EmailService {
     private final TemplateEngine templateEngine;
 
     public void sendAccessCodeEmail(String to, String code) {
-        sendEmail(to, "Your Apartment Access Code", code, "email-code");
+        Map<String, Object> variables = Map.of(
+                "title", "Apartment Access Code",
+                "message",
+                "A new access code has been generated for your apartment registration. Please use the code below to verify your access:",
+                "code", code,
+                "expiryMinutes", 5);
+        sendEmail(to, "Your Apartment Access Code", variables, "email-code");
     }
 
     public void sendPasswordResetEmail(String to, String code) {
-        sendEmail(to, "Password Reset Verification Code", code, "email-code");
+        Map<String, Object> variables = Map.of(
+                "title", "Password Reset Verification",
+                "message",
+                "You have requested to reset your password. Please use the verification code below to proceed:",
+                "code", code,
+                "expiryMinutes", 15);
+        sendEmail(to, "Password Reset Verification Code", variables, "email-code");
     }
 
-    private void sendEmail(String to, String subject, String code, String templateName) {
+    private void sendEmail(String to, String subject, Map<String, Object> variables, String templateName) {
         try {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, "utf-8");
 
             Context context = new Context();
-            context.setVariable("code", code);
+            context.setVariables(variables);
 
             String htmlContent = templateEngine.process(templateName, context);
 
