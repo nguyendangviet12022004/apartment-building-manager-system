@@ -23,4 +23,6 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
     Optional<Apartment> findByApartmentCodeWithBlock(@Param("code") String code);
 
     List<Apartment> findByStatus(String status);
+
+    List<Apartment> findByResidentId(Long residentId);
 }

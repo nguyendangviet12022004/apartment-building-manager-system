@@ -14,6 +14,7 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class ApartmentRequest {
     @NotBlank(message = "Apartment code is required")
+    @jakarta.validation.constraints.Pattern(regexp = "^[A-Z0-9]{3}-[0-9]{4}-[A-Z0-9]{3}$", message = "Invalid apartment code format. Expected XXX-XXXX-XXX")
     private String apartmentCode;
 
     @NotNull(message = "Floor is required")
