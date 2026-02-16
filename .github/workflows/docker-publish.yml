@@ -14,9 +14,6 @@ concurrency:
 jobs:
   build-and-publish-docker-image:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./backend
     steps:
       - name: checkout code
         uses: actions/checkout@v6
@@ -31,6 +28,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           push: true
+          context: ./backend
           tags: ${{vars.DOCKERHUB_USERNAME}}/apartment-building-manager-system-backend:${{inputs.tag}}
     
     
