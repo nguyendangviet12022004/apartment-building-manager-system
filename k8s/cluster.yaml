@@ -4,9 +4,9 @@ nodes:
 - role: control-plane
 - role: worker
   extraMounts:
-  - hostPath: /data/mnt1
+  - hostPath: ./data/mnt1
     containerPath: /data/mnt
 - role: worker
   extraMounts:
-  - hostPath: /data/mnt2
+  - hostPath: ./data/mnt2
     containerPath: /data/mnt

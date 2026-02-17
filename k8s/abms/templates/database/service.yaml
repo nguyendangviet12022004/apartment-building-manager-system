@@ -9,6 +9,7 @@ spec:
   ports:
   - port: 3306
     name: database-service
+  clusterIP: None
   selector:
     {{- include "abms.selectorLabels" . | nindent 4 }}
     app.kubernetes.io/component: database-pod
