@@ -1,11 +1,9 @@
-
-
-replicaCount: 3
+replicaCount: 1
 image:
   backend:
     repository: vietnguyendang/apartment-building-manager-system-backend
     pullPolicy: IfNotPresent
-    tag: "v1.0.3"
+    tag: "v1.0.4"
   mail:
     repository: maildev/maildev
     pullPolicy: IfNotPresent
@@ -50,15 +48,15 @@ httpRoute:
   enabled: false
   annotations: {}
   parentRefs:
-  - name: gateway
-    sectionName: http
+    - name: gateway
+      sectionName: http
   hostnames:
-  - chart-example.local
+    - chart-example.local
   rules:
-  - matches:
-    - path:
-        type: PathPrefix
-        value: /headers
+    - matches:
+        - path:
+            type: PathPrefix
+            value: /headers
   #   filters:
   #   - type: RequestHeaderModifier
   #     requestHeaderModifier:
@@ -75,7 +73,7 @@ httpRoute:
   #     - name: version
   #       value: v2
 
-resources: 
+resources:
   limits:
     cpu: 100m
     memory: 128Mi

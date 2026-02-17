@@ -5,7 +5,7 @@ metadata:
   labels:
     {{- include "abms.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend-deploy
-	namespace: backend
+  namespace: backend
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -18,16 +18,18 @@ spec:
         {{- include "abms.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: backend-pod
     spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       containers:
         - name:  backend
-          image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
+          image: "{{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}"
           ports:
             - containerPort: 8080
-					envFrom:
-        		- configMapRef:
-            		name: backend-configmap
-						- secretRef:
-								name: backend-secret
+          envFrom:
+            - configMapRef:
+                name: backend-configmap
+            - secretRef:
+                name: backend-secret
 
 
 ---
@@ -38,7 +40,7 @@ metadata:
   labels:
     {{- include "abms.labels" . | nindent 4 }}
     app.kubernetes.io/component: mail-deploy
-	namespace: backend
+  namespace: backend
 spec:
   replicas: {{ .Values.replicaCount }}
   selector:
@@ -51,9 +53,11 @@ spec:
         {{- include "abms.selectorLabels" . | nindent 8 }}
         app.kubernetes.io/component: mail-pod
     spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
       containers:
         - name:  mail
-          image: {{ .Values.image.mail.repository }}:{{ .Values.image.mail.tag }}
+          image: "{{ .Values.image.mail.repository }}{{ if .Values.image.mail.tag }}:{{ .Values.image.mail.tag }}{{ end }}"
           ports:
             - containerPort: 1080
-						- containerPort: 1025
+            - containerPort: 1025

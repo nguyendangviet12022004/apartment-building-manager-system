@@ -1,10 +1,14 @@
 apiVersion: v1
-data:
-  DB_HOST: database-statefulset-0.database-service.database.svc.cluster.local
 kind: ConfigMap
 metadata:
   name: backend-configmap
-		labels:
+  namespace: backend
+  labels:
     {{- include "abms.labels" . | nindent 4 }}
     app.kubernetes.io/component: backend-configmap
-  namespace: backend
+data:
+  DB_HOST: database-statefulset-0.database-service.database.svc.cluster.local
+  DB_PORT: "3306"
+  DB_NAME: apartment_building_manager_system
+  MAIL_HOST: mail-service
+  MAIL_PORT: "1025"
