@@ -5,4 +5,6 @@ node_modules
 .next
 .npm
 .pnpm-store
-k8s/data/
+credentials.json
+secret.yaml
+regcred.yaml

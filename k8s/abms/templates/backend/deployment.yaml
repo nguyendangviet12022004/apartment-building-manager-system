@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-deploy
+  labels:
+    {{- include "abms.labels" . | nindent 4 }}
+    app.kubernetes.io/component: backend-deploy
+	namespace: backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "abms.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: backend-pod
+  template:
+    metadata:
+      labels:
+        {{- include "abms.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: backend-pod
+    spec:
+      containers:
+        - name:  backend
+          image: {{ .Values.image.backend.repository }}:{{ .Values.image.backend.tag }}
+          ports:
+            - containerPort: 8080
+					envFrom:
+        		- configMapRef:
+            		name: backend-configmap
+						- secretRef:
+								name: backend-secret
+
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mail-deploy
+  labels:
+    {{- include "abms.labels" . | nindent 4 }}
+    app.kubernetes.io/component: mail-deploy
+	namespace: backend
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "abms.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: mail-pod
+  template:
+    metadata:
+      labels:
+        {{- include "abms.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: mail-pod
+    spec:
+      containers:
+        - name:  mail
+          image: {{ .Values.image.mail.repository }}:{{ .Values.image.mail.tag }}
+          ports:
+            - containerPort: 1080
+						- containerPort: 1025

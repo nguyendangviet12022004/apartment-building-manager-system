@@ -1,9 +1,10 @@
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
+name:  abms-cluster
 nodes:
 - role: control-plane
 - role: worker
-  extraMounts:
-  - hostPath: ./data/mnt
-    containerPath: /data/mnt
+  # extraMounts:
+  # - hostPath: ./data/mnt
+  #   containerPath: /data/mnt
 - role: worker

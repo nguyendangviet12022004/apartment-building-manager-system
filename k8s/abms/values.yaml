@@ -1,18 +1,23 @@
 
 
-replicaCount: 1
+replicaCount: 3
 image:
   backend:
     repository: vietnguyendang/apartment-building-manager-system-backend
     pullPolicy: IfNotPresent
-    tag: "v1.0.1"
+    tag: "v1.0.3"
+  mail:
+    repository: maildev/maildev
+    pullPolicy: IfNotPresent
+    tag: ""
   database:
-    repository: mysql
-    tag: oraclelinux9
+    repository: dhi.io/mysql
+    tag: 9.6
     pullPolicy: IfNotPresent
 
 imagePullSecrets:
-  - name: dhi
+  - name: database-regcred
+  - name: backend-regcred
 nameOverride: ""
 fullnameOverride: ""
 serviceAccount:
