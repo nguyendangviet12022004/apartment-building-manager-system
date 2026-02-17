@@ -6,6 +6,9 @@ on:
         description: 'Docker Image Tag'
         required: true
         type: string
+  push: 
+    tags:
+      - '*'
 
 concurrency:
     group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,6 +18,15 @@ jobs:
   build-and-publish-docker-image:
     runs-on: ubuntu-latest
     steps:
+      - name : Define tag name
+        id: vars
+        run: |
+          if [ "${{github.event_name}}" == 'workflow_dispatch' ]; then
+            echo "tag_name=${{github.event.inputs.tag}}" >> $GITHUB_OUTPUT
+          else
+            echo "tag_name=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+          fi
+
       - name: checkout code
         uses: actions/checkout@v6
       - name: Login to Docker Hub
@@ -29,6 +41,6 @@ jobs:
         with:
           push: true
           context: ./backend
-          tags: ${{vars.DOCKERHUB_USERNAME}}/apartment-building-manager-system-backend:${{inputs.tag}}
+          tags: ${{vars.DOCKERHUB_USERNAME}}/apartment-building-manager-system-backend:${{steps.vars.outputs.tag_name}}
     
     
