@@ -1,6 +1,6 @@
 services:
   db:
-    image: dhi.io/mysql:9.6
+    image: mysql:oraclelinux9
     container_name: db
     ports:
       - "3000:3306"
