@@ -9,10 +9,12 @@ import com.viet.backend.mapper.UserMapper;
 import com.viet.backend.repository.ApartmentAccessCodeRepository;
 import com.viet.backend.repository.ApartmentRepository;
 import com.viet.backend.repository.ResidentRepository;
-import com.viet.backend.repository.UserRepository;
-import lombok.RequiredArgsConstructor;
 import com.viet.backend.exception.*;
 import com.viet.backend.model.*;
+import com.viet.backend.repository.*;
+import lombok.RequiredArgsConstructor;
+import java.security.SecureRandom;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -35,6 +37,8 @@ public class AuthenticationService {
   private final ApartmentAccessCodeRepository accessCodeRepository;
   private final ResidentRepository residentRepository;
   private final ApartmentRepository apartmentRepository;
+  private final PasswordResetCodeRepository codeRepository;
+  private final EmailService emailService;
 
   @Transactional
   public AuthenticationResponse register(RegisterRequest request) {
@@ -105,6 +109,58 @@ public class AuthenticationService {
     // Update with new password
     user.setPassword(passwordEncoder.encode(request.getNewPassword()));
     repository.save(user);
+  }
+
+  @Transactional
+  public void generateResetCode(String email) {
+    User user = repository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+    // Delete any existing codes for this user to keep it clean
+    codeRepository.deleteByUser(user);
+
+    // Generate 6 digit code
+    String code = String.format("%06d", new SecureRandom().nextInt(999999));
+
+    PasswordResetCode resetCode = PasswordResetCode.builder()
+        .code(code)
+        .user(user)
+        .expiryDate(LocalDateTime.now().plusMinutes(15)) // Valid for 15 minutes
+        .isActive(true)
+        .build();
+
+    codeRepository.save(resetCode);
+    emailService.sendPasswordResetEmail(email, code);
+  }
+
+  public void verifyResetCode(String email, String code) {
+    PasswordResetCode resetCode = codeRepository.findByCodeAndUser_EmailAndIsActiveTrue(code, email)
+        .orElseThrow(() -> new InvalidCodeException("Invalid verification code"));
+
+    if (resetCode.getExpiryDate().isBefore(LocalDateTime.now())) {
+      throw new ExpiredCodeException("Verification code has expired");
+    }
+
+    // As per business rule: Just verify, do not deactivate yet.
+  }
+
+  @Transactional
+  public void resetPassword(String email, String code, String newPassword) {
+    PasswordResetCode resetCode = codeRepository.findByCodeAndUser_EmailAndIsActiveTrue(code, email)
+        .orElseThrow(() -> new InvalidCodeException("Invalid verification code"));
+
+    if (resetCode.getExpiryDate().isBefore(LocalDateTime.now())) {
+      throw new ExpiredCodeException("Verification code has expired");
+    }
+
+    // Update user password
+    User user = resetCode.getUser();
+    user.setPassword(passwordEncoder.encode(newPassword));
+    repository.save(user);
+
+    // Deactivate code after successful reset
+    resetCode.setActive(false);
+    codeRepository.save(resetCode);
   }
 
   private Map<String, Object> getExtraClaims(User user) {
