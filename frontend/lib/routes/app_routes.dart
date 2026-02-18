@@ -5,6 +5,7 @@ import '../screens/register_screen.dart';
 import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
+import '../screens/apartment_verify_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -13,6 +14,7 @@ class AppRoutes {
   static const String forgotPassword = '/forgot-password';
   static const String resetPassword = '/reset-password';
   static const String changePassword = '/change-password';
+  static const String verifyApartment = '/verify-apartment';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -21,5 +23,6 @@ class AppRoutes {
     forgotPassword: (context) => const ForgotPasswordScreen(),
     resetPassword: (context) => const ResetPasswordScreen(),
     changePassword: (context) => const ChangePasswordScreen(),
+    verifyApartment: (context) => const ApartmentVerifyScreen(),
   };
 }

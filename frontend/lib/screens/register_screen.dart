@@ -17,6 +17,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
+  final _identityCardController = TextEditingController();
+  final _emergencyContactController = TextEditingController();
   bool _isPasswordVisible = false;
 
   @override
@@ -26,6 +28,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _identityCardController.dispose();
+    _emergencyContactController.dispose();
     super.dispose();
   }
 
@@ -60,12 +64,23 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     color: Colors.black87,
                   ),
                 ),
-                const SizedBox(height: 8),
                 const Text(
                   'Join us to manage your home easily',
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey),
                 ),
+                if (authProvider.isApartmentVerified)
+                  Padding(
+                    padding: const EdgeInsets.only(top: 8.0),
+                    child: Text(
+                      'Verified Apartment ID: ${authProvider.apartmentId}',
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                        color: Colors.green,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 const SizedBox(height: 40),
                 Row(
                   children: [
@@ -118,6 +133,36 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     if (!value.contains('@')) return 'Invalid email format';
                     return null;
                   },
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _identityCardController,
+                  decoration: InputDecoration(
+                    labelText: 'Identity Card / Passport',
+                    hintText: 'Enter ID number',
+                    prefixIcon: const Icon(Icons.badge_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Identity card is required'
+                      : null,
+                ),
+                const SizedBox(height: 20),
+                TextFormField(
+                  controller: _emergencyContactController,
+                  decoration: InputDecoration(
+                    labelText: 'Emergency Contact',
+                    hintText: 'Enter phone or name',
+                    prefixIcon: const Icon(Icons.contact_phone_outlined),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  validator: (value) => (value == null || value.isEmpty)
+                      ? 'Emergency contact is required'
+                      : null,
                 ),
                 const SizedBox(height: 20),
                 TextFormField(
@@ -178,11 +223,24 @@ class _RegisterScreenState extends State<RegisterScreen> {
                                 lastname: _lastNameController.text.trim(),
                                 email: _emailController.text.trim(),
                                 password: _passwordController.text,
+                                identityCard: _identityCardController.text
+                                    .trim(),
+                                emergencyContact: _emergencyContactController
+                                    .text
+                                    .trim(),
                               );
                               if (context.mounted) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text(
+                                      'Registration successful! Please login.',
+                                    ),
+                                    backgroundColor: Colors.green,
+                                  ),
+                                );
                                 Navigator.pushReplacementNamed(
                                   context,
-                                  AppRoutes.home,
+                                  AppRoutes.login,
                                 );
                               }
                             } catch (e) {

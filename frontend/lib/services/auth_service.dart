@@ -95,16 +95,54 @@ class AuthService {
     _handleResponse(response);
   }
 
+  Future<int> verifyApartmentCode(String code) async {
+    final response = await http.post(
+      Uri.parse(
+        'http://localhost:8080/api/v1/apartment-codes/verify?code=$code',
+      ),
+      headers: {'Content-Type': 'application/json'},
+    );
+
+    final result = _handleResponse(response);
+    if (result.containsKey('id')) {
+      return result['id'] as int;
+    }
+    if (result.containsKey('message')) {
+      return int.parse(result['message']);
+    }
+    throw Exception('Failed to get apartment ID from response');
+  }
+
   Map<String, dynamic> _handleResponse(http.Response response) {
-    final body = response.body.isNotEmpty ? jsonDecode(response.body) : {};
+    final contentType = response.headers['content-type'] ?? '';
+    dynamic decodedBody;
+
+    if (response.body.isNotEmpty) {
+      if (contentType.contains('application/json')) {
+        try {
+          decodedBody = jsonDecode(response.body);
+        } catch (e) {
+          decodedBody = response.body;
+        }
+      } else {
+        decodedBody = response.body;
+      }
+    } else {
+      decodedBody = {};
+    }
 
     if (response.statusCode >= 200 && response.statusCode < 300) {
-      return body is Map<String, dynamic> ? body : {'message': body.toString()};
+      if (decodedBody is Map<String, dynamic>) {
+        return decodedBody;
+      } else if (decodedBody is int) {
+        return {'id': decodedBody};
+      } else {
+        return {'message': decodedBody.toString()};
+      }
     } else {
-      // Throw error message from backend if available
       String message = 'An error occurred';
-      if (body is Map && body.containsKey('message')) {
-        message = body['message'];
+      if (decodedBody is Map && decodedBody.containsKey('message')) {
+        message = decodedBody['message'];
       } else if (response.body.isNotEmpty) {
         message = response.body;
       }

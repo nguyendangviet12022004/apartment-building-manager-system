@@ -126,9 +126,10 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _passwordController.text,
                               );
                               if (context.mounted) {
-                                Navigator.pushReplacementNamed(
+                                Navigator.pushNamedAndRemoveUntil(
                                   context,
                                   AppRoutes.home,
+                                  (route) => false,
                                 );
                               }
                             } catch (e) {
@@ -172,8 +173,10 @@ class _LoginScreenState extends State<LoginScreen> {
                   children: [
                     const Text("Don't have an account?"),
                     TextButton(
-                      onPressed: () =>
-                          Navigator.pushNamed(context, AppRoutes.register),
+                      onPressed: () => Navigator.pushNamed(
+                        context,
+                        AppRoutes.verifyApartment,
+                      ),
                       child: const Text('Register Now'),
                     ),
                   ],

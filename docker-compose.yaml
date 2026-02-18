@@ -9,12 +9,32 @@ services:
     environment:
       MYSQL_ROOT_PASSWORD: 123456
       MYSQL_DATABASE: apartment_building_manager_system
+    restart: always
   maildev:
     image: maildev/maildev
     container_name: maildev
     ports:
       - "1080:1080"
       - "1025:1025"
+    restart: always
+
+  backend:
+    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.5
+    container_name: backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - DB_NAME=apartment_building_manager_system
+      - DB_USERNAME=root
+      - DB_PASSWORD=123456
+      - MAIL_HOST=maildev
+      - MAIL_PORT=1025
+      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+    depends_on:
+      - db
+      - maildev
 
 volumes:
   db_data:

@@ -26,7 +26,11 @@ class HomeScreen extends StatelessWidget {
                   listen: false,
                 ).logout();
                 if (context.mounted) {
-                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.login,
+                    (route) => false,
+                  );
                 }
               }
             },

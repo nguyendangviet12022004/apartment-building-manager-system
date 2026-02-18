@@ -9,12 +9,16 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _email;
+  int? _apartmentId;
+  bool _isApartmentVerified = false;
 
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
   String? get email => _email;
+  int? get apartmentId => _apartmentId;
+  bool get isApartmentVerified => _isApartmentVerified;
 
   AuthProvider() {
     checkAuthStatus();
@@ -57,28 +61,22 @@ class AuthProvider with ChangeNotifier {
     required String lastname,
     required String email,
     required String password,
+    String? identityCard,
+    String? emergencyContact,
   }) async {
     _setLoading(true);
     try {
-      final response = await _authService.register(
+      await _authService.register(
         firstname: firstname,
         lastname: lastname,
         email: email,
         password: password,
+        apartmentId: _apartmentId?.toString(),
+        identityCard: identityCard,
+        emergencyContact: emergencyContact,
       );
 
-      final accessToken = response['accessToken'];
-      final refreshToken = response['refreshToken'];
-
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('accessToken', accessToken);
-      await prefs.setString('refreshToken', refreshToken);
-      await prefs.setString('email', email);
-
-      _accessToken = accessToken;
-      _refreshToken = refreshToken;
-      _email = email;
-      _isAuthenticated = true;
+      // We don't log in automatically here because user wants to go to login screen
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
@@ -142,6 +140,21 @@ class AuthProvider with ChangeNotifier {
       await _authService.changePassword(_email!, oldPassword, newPassword);
       _setLoading(false);
     } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> verifyApartmentCode(String code) async {
+    _setLoading(true);
+    try {
+      final id = await _authService.verifyApartmentCode(code);
+      _apartmentId = id;
+      _isApartmentVerified = true;
+      _setLoading(false);
+      notifyListeners();
+    } catch (e) {
+      _isApartmentVerified = false;
       _setLoading(false);
       rethrow;
     }
