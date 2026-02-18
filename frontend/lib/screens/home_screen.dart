@@ -12,13 +12,48 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('Apartment Manager'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await Provider.of<AuthProvider>(context, listen: false).logout();
-              Navigator.pushReplacementNamed(context, AppRoutes.login);
+          PopupMenuButton<String>(
+            icon: const CircleAvatar(
+              backgroundColor: Colors.blueAccent,
+              child: Icon(Icons.person, color: Colors.white),
+            ),
+            onSelected: (value) async {
+              if (value == 'change_password') {
+                Navigator.pushNamed(context, AppRoutes.changePassword);
+              } else if (value == 'logout') {
+                await Provider.of<AuthProvider>(
+                  context,
+                  listen: false,
+                ).logout();
+                if (context.mounted) {
+                  Navigator.pushReplacementNamed(context, AppRoutes.login);
+                }
+              }
             },
+            itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'change_password',
+                child: Row(
+                  children: [
+                    Icon(Icons.lock_reset, color: Colors.black54),
+                    SizedBox(width: 8),
+                    Text('Change Password'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem<String>(
+                value: 'logout',
+                child: Row(
+                  children: [
+                    Icon(Icons.logout, color: Colors.redAccent),
+                    SizedBox(width: 8),
+                    Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                  ],
+                ),
+              ),
+            ],
           ),
+          const SizedBox(width: 8),
         ],
       ),
       body: const Center(
