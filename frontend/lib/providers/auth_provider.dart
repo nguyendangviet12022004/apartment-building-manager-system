@@ -89,6 +89,43 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
   }
 
+  Future<void> forgotPassword(String email) async {
+    _setLoading(true);
+    try {
+      await _authService.forgotPassword(email);
+      _setLoading(false);
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> verifyCode(String email, String code) async {
+    _setLoading(true);
+    try {
+      await _authService.verifyCode(email, code);
+      _setLoading(false);
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
+  Future<void> resetPassword(
+    String email,
+    String code,
+    String newPassword,
+  ) async {
+    _setLoading(true);
+    try {
+      await _authService.resetPassword(email, code, newPassword);
+      _setLoading(false);
+    } catch (e) {
+      _setLoading(false);
+      rethrow;
+    }
+  }
+
   void _setLoading(bool value) {
     _isLoading = value;
     notifyListeners();
