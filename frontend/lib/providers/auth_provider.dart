@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/auth_service.dart';
+import '../services/notification_service.dart';
 
 class AuthProvider with ChangeNotifier {
   final AuthService _authService = AuthService();
+  final NotificationService _notificationService = NotificationService();
   String? _accessToken;
   String? _refreshToken;
   bool _isAuthenticated = false;
@@ -30,6 +32,12 @@ class AuthProvider with ChangeNotifier {
     _refreshToken = prefs.getString('refreshToken');
     _email = prefs.getString('email');
     _isAuthenticated = _accessToken != null;
+
+    // If already authenticated, initialize notifications
+    if (_isAuthenticated) {
+      _notificationService.initialize();
+    }
+
     notifyListeners();
   }
 
@@ -49,6 +57,10 @@ class AuthProvider with ChangeNotifier {
       _refreshToken = refreshToken;
       _email = email;
       _isAuthenticated = true;
+
+      // Initialize notifications after successful login
+      _notificationService.initialize();
+
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
@@ -93,6 +105,10 @@ class AuthProvider with ChangeNotifier {
     _refreshToken = null;
     _email = null;
     _isAuthenticated = false;
+
+    // Delete FCM token on logout
+    await _notificationService.deleteToken();
+
     notifyListeners();
   }
 
