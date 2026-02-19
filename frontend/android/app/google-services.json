@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "884409737613",
+    "project_id": "apartment-building-manager",
+    "storage_bucket": "apartment-building-manager.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:884409737613:android:0488a8c8c1194037425dc4",
+        "android_client_info": {
+          "package_name": "com.example.frontend"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCRGFf4wAY1txQ79niOr4pkqjiHg6JJ3Rk"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
