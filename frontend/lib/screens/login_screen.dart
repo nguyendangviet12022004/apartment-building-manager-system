@@ -73,7 +73,6 @@ class _LoginScreenState extends State<LoginScreen> {
                   validator: (value) {
                     if (value == null || value.isEmpty)
                       return 'Please enter email';
-                    if (!value.contains('@')) return 'Invalid email format';
                     return null;
                   },
                 ),
@@ -126,9 +125,17 @@ class _LoginScreenState extends State<LoginScreen> {
                                 _passwordController.text,
                               );
                               if (context.mounted) {
+                                String targetRoute = AppRoutes.home;
+                                if (authProvider.role == 'RESIDENT') {
+                                  targetRoute = AppRoutes.residentHome;
+                                } else if (authProvider.role == 'ADMIN' ||
+                                    authProvider.role == 'MANAGER') {
+                                  targetRoute = AppRoutes.adminHome;
+                                }
+
                                 Navigator.pushNamedAndRemoveUntil(
                                   context,
-                                  AppRoutes.home,
+                                  targetRoute,
                                   (route) => false,
                                 );
                               }

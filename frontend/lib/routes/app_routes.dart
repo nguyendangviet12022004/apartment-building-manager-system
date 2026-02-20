@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import '../screens/home_screen.dart';
+import '../screens/resident_home_screen.dart';
+import '../screens/admin_home_screen.dart';
 import '../screens/login_screen.dart';
 import '../screens/register_screen.dart';
 import '../screens/forgot_password_screen.dart';
@@ -9,6 +11,8 @@ import '../screens/apartment_verify_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
+  static const String residentHome = '/resident-home';
+  static const String adminHome = '/admin-home';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -18,6 +22,8 @@ class AppRoutes {
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
+    residentHome: (context) => const ResidentHomeScreen(),
+    adminHome: (context) => const AdminHomeScreen(),
     login: (context) => const LoginScreen(),
     register: (context) => const RegisterScreen(),
     forgotPassword: (context) => const ForgotPasswordScreen(),

@@ -11,6 +11,7 @@ class AuthProvider with ChangeNotifier {
   bool _isAuthenticated = false;
   bool _isLoading = false;
   String? _email;
+  String? _role;
   int? _apartmentId;
   bool _isApartmentVerified = false;
 
@@ -19,6 +20,7 @@ class AuthProvider with ChangeNotifier {
   String? get accessToken => _accessToken;
   String? get refreshToken => _refreshToken;
   String? get email => _email;
+  String? get role => _role;
   int? get apartmentId => _apartmentId;
   bool get isApartmentVerified => _isApartmentVerified;
 
@@ -31,6 +33,7 @@ class AuthProvider with ChangeNotifier {
     _accessToken = prefs.getString('accessToken');
     _refreshToken = prefs.getString('refreshToken');
     _email = prefs.getString('email');
+    _role = prefs.getString('role');
     _isAuthenticated = _accessToken != null;
 
     // If already authenticated, initialize notifications
@@ -51,15 +54,18 @@ class AuthProvider with ChangeNotifier {
       final response = await _authService.login(email, password);
       final accessToken = response['accessToken'];
       final refreshToken = response['refreshToken'];
+      final role = response['role'];
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('accessToken', accessToken);
       await prefs.setString('refreshToken', refreshToken);
       await prefs.setString('email', email);
+      await prefs.setString('role', role);
 
       _accessToken = accessToken;
       _refreshToken = refreshToken;
       _email = email;
+      _role = role;
       _isAuthenticated = true;
 
       // Initialize notifications after successful login and send to backend
@@ -115,9 +121,11 @@ class AuthProvider with ChangeNotifier {
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
     await prefs.remove('email');
+    await prefs.remove('role');
     _accessToken = null;
     _refreshToken = null;
     _email = null;
+    _role = null;
     _isAuthenticated = false;
 
     // Delete FCM token locally

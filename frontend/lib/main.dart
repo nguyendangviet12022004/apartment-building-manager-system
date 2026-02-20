@@ -55,7 +55,12 @@ class MyApp extends StatelessWidget {
           ),
           // Check auth status here
           initialRoute: authProvider.isAuthenticated
-              ? AppRoutes.home
+              ? (authProvider.role == 'RESIDENT'
+                    ? AppRoutes.residentHome
+                    : (authProvider.role == 'ADMIN' ||
+                          authProvider.role == 'MANAGER')
+                    ? AppRoutes.adminHome
+                    : AppRoutes.home)
               : AppRoutes.login,
           routes: AppRoutes.routes,
         );

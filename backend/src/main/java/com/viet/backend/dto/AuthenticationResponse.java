@@ -12,4 +12,6 @@ import lombok.NoArgsConstructor;
 public class AuthenticationResponse {
   private String accessToken;
   private String refreshToken;
+  private String email;
+  private String role;
 }
