@@ -2,6 +2,11 @@ spring:
   application:
     name: backend
 
+  servlet:
+    multipart:
+      max-file-size: 50MB
+      max-request-size: 100MB
+
   datasource:
     url: jdbc:mysql://${DB_HOST:localhost}:${DB_PORT:3000}/${DB_NAME:apartment_building_manager_system}?createDatabaseIfNotExist=true
     username: ${DB_USERNAME:root}

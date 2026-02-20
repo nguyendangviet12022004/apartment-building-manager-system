@@ -19,6 +19,7 @@ public class CloudinaryService {
 
     /**
      * Uploads a file to Cloudinary and returns the URL.
+     * Supports images and videos.
      *
      * @param file   The file to upload.
      * @param folder The folder name on Cloudinary.
@@ -26,13 +27,32 @@ public class CloudinaryService {
      */
     public String uploadFile(MultipartFile file, String folder) {
         try {
-            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(),
-                    ObjectUtils.asMap("folder", folder));
+            Map<?, ?> options = ObjectUtils.asMap(
+                    "folder", folder,
+                    "resource_type", "auto");
+            Map<?, ?> uploadResult = cloudinary.uploader().upload(file.getBytes(), options);
             return uploadResult.get("secure_url").toString();
         } catch (IOException e) {
             log.error("Error uploading file to Cloudinary: {}", e.getMessage());
-            throw new RuntimeException("Failed to upload image to Cloudinary", e);
+            throw new RuntimeException("Failed to upload file to Cloudinary", e);
         }
+    }
+
+    /**
+     * Uploads multiple files to Cloudinary.
+     *
+     * @param files  Array of files to upload.
+     * @param folder Optional folder name.
+     * @return List of secure URLs.
+     */
+    public java.util.List<String> uploadMultipleFiles(MultipartFile[] files, String folder) {
+        java.util.List<String> urls = new java.util.ArrayList<>();
+        for (MultipartFile file : files) {
+            if (!file.isEmpty()) {
+                urls.add(uploadFile(file, folder));
+            }
+        }
+        return urls;
     }
 
     /**
