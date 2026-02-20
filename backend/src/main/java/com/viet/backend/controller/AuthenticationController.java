@@ -58,4 +58,16 @@ public class AuthenticationController {
     service.changePassword(request);
     return ResponseEntity.ok("Password has been changed successfully");
   }
+
+  @PostMapping("/fcm-token/update")
+  public ResponseEntity<String> updateFcmToken(@RequestBody com.viet.backend.dto.FcmTokenRequest request) {
+    service.updateFcmToken(request.getEmail(), request.getToken());
+    return ResponseEntity.ok("FCM token updated successfully");
+  }
+
+  @PostMapping("/fcm-token/remove")
+  public ResponseEntity<String> removeFcmToken(@RequestBody com.viet.backend.dto.FcmTokenRequest request) {
+    service.removeFcmToken(request.getEmail());
+    return ResponseEntity.ok("FCM token removed successfully");
+  }
 }

@@ -6,3 +6,4 @@ node_modules
 .npm
 .pnpm-store
 k8s/
+key/

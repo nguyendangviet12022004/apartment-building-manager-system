@@ -116,6 +116,11 @@
 			<version>2.8.5</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.google.firebase</groupId>
+			<artifactId>firebase-admin</artifactId>
+			<version>9.7.1</version>
+		</dependency>
 	</dependencies>
 
 	<build>
@@ -162,10 +167,10 @@
 	</build>
 
 	<distributionManagement>
-   <repository>
-		<id>github</id>
-		<name>GitHub OWNER Apache Maven Packages</name>
-		<url>https://maven.pkg.github.com/nguyendangviet12022004/apartment-building-manager-system</url>
-	</repository>
+		<repository>
+			<id>github</id>
+			<name>GitHub OWNER Apache Maven Packages</name>
+			<url>https://maven.pkg.github.com/nguyendangviet12022004/apartment-building-manager-system</url>
+		</repository>
 	</distributionManagement>
 </project>

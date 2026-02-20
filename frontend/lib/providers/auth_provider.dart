@@ -34,8 +34,12 @@ class AuthProvider with ChangeNotifier {
     _isAuthenticated = _accessToken != null;
 
     // If already authenticated, initialize notifications
-    if (_isAuthenticated) {
-      _notificationService.initialize();
+    if (_isAuthenticated && _email != null) {
+      _notificationService.initialize().then((token) {
+        if (token != null) {
+          _authService.updateFcmToken(_email!, token);
+        }
+      });
     }
 
     notifyListeners();
@@ -58,8 +62,12 @@ class AuthProvider with ChangeNotifier {
       _email = email;
       _isAuthenticated = true;
 
-      // Initialize notifications after successful login
-      _notificationService.initialize();
+      // Initialize notifications after successful login and send to backend
+      _notificationService.initialize().then((token) {
+        if (token != null) {
+          _authService.updateFcmToken(email, token);
+        }
+      });
 
       _setLoading(false);
     } catch (e) {
@@ -98,6 +106,12 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
+
+    // Remove FCM token on backend before local logout if email is known
+    if (_email != null) {
+      _authService.removeFcmToken(_email!);
+    }
+
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
     await prefs.remove('email');
@@ -106,7 +120,7 @@ class AuthProvider with ChangeNotifier {
     _email = null;
     _isAuthenticated = false;
 
-    // Delete FCM token on logout
+    // Delete FCM token locally
     await _notificationService.deleteToken();
 
     notifyListeners();

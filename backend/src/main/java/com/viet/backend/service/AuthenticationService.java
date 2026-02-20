@@ -163,6 +163,22 @@ public class AuthenticationService {
     codeRepository.save(resetCode);
   }
 
+  @Transactional
+  public void updateFcmToken(String email, String token) {
+    User user = repository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    user.setFcmToken(token);
+    repository.save(user);
+  }
+
+  @Transactional
+  public void removeFcmToken(String email) {
+    User user = repository.findByEmail(email)
+        .orElseThrow(() -> new RuntimeException("User not found"));
+    user.setFcmToken(null);
+    repository.save(user);
+  }
+
   private Map<String, Object> getExtraClaims(User user) {
     Map<String, Object> extraClaims = new HashMap<>();
     extraClaims.put("user_id", user.getId());

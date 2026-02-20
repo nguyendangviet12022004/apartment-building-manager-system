@@ -19,7 +19,7 @@ services:
     restart: always
 
   backend:
-    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.5
+    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.6
     container_name: backend
     ports:
       - "8080:8080"
@@ -32,6 +32,9 @@ services:
       - MAIL_HOST=maildev
       - MAIL_PORT=1025
       - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+      - FIREBASE_CONFIG_PATH=/app/service-account.json
+    volumes:
+      - ./key/apartment-building-manager-42925fb0f83f.json:/app/service-account.json
     depends_on:
       - db
       - maildev

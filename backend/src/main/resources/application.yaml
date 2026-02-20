@@ -34,3 +34,7 @@ cloudinary:
   cloud-name: ${CLOUDINARY_CLOUD_NAME:dnkghao4p}
   api-key: ${CLOUDINARY_API_KEY:399479765913834}
   api-secret: ${CLOUDINARY_API_SECRET:kG6ErLLWRvSFnvA9x0S2ln-2G7U}
+
+firebase:
+  config:
+    path: ${FIREBASE_CONFIG_PATH:../key/apartment-building-manager-42925fb0f83f.json}

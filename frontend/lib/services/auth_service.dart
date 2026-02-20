@@ -96,6 +96,24 @@ class AuthService {
     _handleResponse(response);
   }
 
+  Future<void> updateFcmToken(String email, String token) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/fcm-token/update'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email, 'token': token}),
+    );
+    _handleResponse(response);
+  }
+
+  Future<void> removeFcmToken(String email) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/fcm-token/remove'),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'email': email}),
+    );
+    _handleResponse(response);
+  }
+
   Future<int> verifyApartmentCode(String code) async {
     final response = await http.post(
       Uri.parse(
