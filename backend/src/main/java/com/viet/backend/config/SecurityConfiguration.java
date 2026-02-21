@@ -40,7 +40,10 @@ public class SecurityConfiguration {
         .cors(Customizer.withDefaults())
         .csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth
-            .anyRequest().permitAll())
+            .requestMatchers("/api/v1/auth/test-token").authenticated()
+            .requestMatchers("/api/v1/auth/**").permitAll()
+            .requestMatchers("/api/v1/apartment-codes/verify").permitAll()
+            .anyRequest().authenticated())
         .sessionManagement(session -> session
             .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
         .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);

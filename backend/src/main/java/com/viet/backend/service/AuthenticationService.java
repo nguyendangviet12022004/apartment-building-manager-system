@@ -79,6 +79,7 @@ public class AuthenticationService {
         .refreshToken(refreshToken)
         .email(savedUser.getEmail())
         .role(savedUser.getRole().name())
+        .userId(savedUser.getId())
         .build();
   }
 
@@ -97,6 +98,7 @@ public class AuthenticationService {
         .refreshToken(refreshToken)
         .email(user.getEmail())
         .role(user.getRole().name())
+        .userId(user.getId())
         .build();
   }
 

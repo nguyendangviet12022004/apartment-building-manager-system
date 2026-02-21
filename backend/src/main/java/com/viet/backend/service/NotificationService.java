@@ -2,6 +2,7 @@ package com.viet.backend.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.google.firebase.FirebaseApp;
 import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
@@ -25,7 +26,8 @@ public class NotificationService {
     private final ObjectMapper objectMapper;
 
     @Transactional
-    public void sendNotification(Integer userId, String title, String content, Map<String, String> data) {
+    public void sendNotification(Integer userId, String title, String content, String detail,
+            Map<String, String> data) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
@@ -42,6 +44,7 @@ public class NotificationService {
                 .user(user)
                 .title(title)
                 .content(content)
+                .detail(detail != null ? detail : content) // Default detail to content if null
                 .data(jsonData)
                 .build();
 
@@ -62,6 +65,10 @@ public class NotificationService {
                         .putAllData(data != null ? data : Map.of())
                         .build();
 
+                if (FirebaseApp.getApps().isEmpty()) {
+                    System.err.println("Firebase has not been initialized. Messaging skipped.");
+                    return;
+                }
                 String response = FirebaseMessaging.getInstance().send(message);
                 System.out.println("Successfully sent FCM message: " + response);
             } catch (FirebaseMessagingException e) {
@@ -82,5 +89,12 @@ public class NotificationService {
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
         notification.setRead(true);
         notificationRepository.save(notification);
+    }
+
+    @Transactional
+    public void markAllAsRead(Integer userId) {
+        List<Notification> notifications = notificationRepository.findByUserIdAndIsReadFalse(userId);
+        notifications.forEach(n -> n.setRead(true));
+        notificationRepository.saveAll(notifications);
     }
 }

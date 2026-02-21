@@ -39,7 +39,9 @@ public class FirebaseConfig {
                 System.out.println("Firebase initialized successfully from: " + configPath);
             }
         } catch (IOException e) {
-            System.err.println("Error initializing Firebase: " + e.getMessage());
+            System.err.println("CRITICAL: Error initializing Firebase with path: " + configPath);
+            System.err.println("Resolved path: " + new java.io.File(configPath).getAbsolutePath());
+            System.err.println("Error message: " + e.getMessage());
         }
     }
 }

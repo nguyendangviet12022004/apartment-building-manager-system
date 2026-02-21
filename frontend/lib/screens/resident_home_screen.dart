@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../providers/auth_provider.dart';
-import '../../routes/app_routes.dart';
+import '../widgets/notification_bell.dart';
+import '../widgets/app_drawer.dart';
 
 class ResidentHomeScreen extends StatelessWidget {
   const ResidentHomeScreen({super.key});
@@ -11,55 +10,9 @@ class ResidentHomeScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Resident Home'),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const CircleAvatar(
-              backgroundColor: Colors.blueAccent,
-              child: Icon(Icons.person, color: Colors.white),
-            ),
-            onSelected: (value) async {
-              if (value == 'change_password') {
-                Navigator.pushNamed(context, AppRoutes.changePassword);
-              } else if (value == 'logout') {
-                await Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                ).logout();
-                if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(
-                    context,
-                    AppRoutes.login,
-                    (route) => false,
-                  );
-                }
-              }
-            },
-            itemBuilder: (BuildContext context) => [
-              const PopupMenuItem<String>(
-                value: 'change_password',
-                child: Row(
-                  children: [
-                    Icon(Icons.lock_reset, color: Colors.black54),
-                    SizedBox(width: 8),
-                    Text('Change Password'),
-                  ],
-                ),
-              ),
-              const PopupMenuItem<String>(
-                value: 'logout',
-                child: Row(
-                  children: [
-                    Icon(Icons.logout, color: Colors.redAccent),
-                    SizedBox(width: 8),
-                    Text('Logout', style: TextStyle(color: Colors.redAccent)),
-                  ],
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(width: 8),
-        ],
+        actions: const [NotificationBell(), SizedBox(width: 8)],
       ),
+      drawer: const AppDrawer(),
       body: const Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,

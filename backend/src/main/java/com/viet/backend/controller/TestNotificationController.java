@@ -16,17 +16,24 @@ public class TestNotificationController {
 
     @PostMapping("/send")
     public ResponseEntity<String> sendTestNotification(
-            @RequestParam Integer userId,
+            @RequestHeader("X-User-ID") Integer userId,
             @RequestParam String title,
-            @RequestParam String content) {
+            @RequestParam String content,
+            @RequestParam(required = false) String detail) {
 
-        notificationService.sendNotification(userId, title, content,
+        notificationService.sendNotification(userId, title, content, detail,
                 Map.of("click_action", "FLUTTER_NOTIFICATION_CLICK"));
         return ResponseEntity.ok("Test notification sent and saved");
     }
 
-    @GetMapping("/user/{userId}")
-    public ResponseEntity<?> getUserNotifications(@PathVariable Integer userId) {
+    @GetMapping("/user")
+    public ResponseEntity<?> getUserNotifications(@RequestHeader("X-User-ID") Integer userId) {
         return ResponseEntity.ok(notificationService.getUserNotifications(userId));
+    }
+
+    @PostMapping("/mark-all-read")
+    public ResponseEntity<String> markAllRead(@RequestHeader("X-User-ID") Integer userId) {
+        notificationService.markAllAsRead(userId);
+        return ResponseEntity.ok("All notifications marked as read");
     }
 }
