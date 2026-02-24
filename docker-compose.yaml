@@ -19,7 +19,7 @@ services:
     restart: always
 
   backend:
-    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.6
+    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.7
     container_name: backend
     ports:
       - "8080:8080"
