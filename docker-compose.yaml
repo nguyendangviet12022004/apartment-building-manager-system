@@ -18,26 +18,26 @@ services:
       - "1025:1025"
     restart: always
 
-  backend:
-    image: vietnguyendang/apartment-building-manager-system-backend:v1.0.7
-    container_name: backend
-    ports:
-      - "8080:8080"
-    environment:
-      - DB_HOST=db
-      - DB_PORT=3306
-      - DB_NAME=apartment_building_manager_system
-      - DB_USERNAME=root
-      - DB_PASSWORD=123456
-      - MAIL_HOST=maildev
-      - MAIL_PORT=1025
-      - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
-      - FIREBASE_CONFIG_PATH=/app/service-account.json
-    volumes:
-      - ./key/apartment-building-manager-42925fb0f83f.json:/app/service-account.json
-    depends_on:
-      - db
-      - maildev
+  # backend:
+  #   image: vietnguyendang/apartment-building-manager-system-backend:v1.0.7
+  #   container_name: backend
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     - DB_HOST=db
+  #     - DB_PORT=3306
+  #     - DB_NAME=apartment_building_manager_system
+  #     - DB_USERNAME=root
+  #     - DB_PASSWORD=123456
+  #     - MAIL_HOST=maildev
+  #     - MAIL_PORT=1025
+  #     - JWT_SECRET=404E635266556A586E3272357538782F413F4428472B4B6250645367566B5970
+  #     - FIREBASE_CONFIG_PATH=/app/service-account.json
+  #   volumes:
+  #     - ./key/apartment-building-manager-42925fb0f83f.json:/app/service-account.json
+  #   depends_on:
+  #     - db
+  #     - maildev
 
 volumes:
   db_data:
