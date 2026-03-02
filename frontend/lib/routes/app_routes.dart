@@ -9,11 +9,13 @@ import '../screens/forgot_password_screen.dart';
 import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/apartment_verify_screen.dart';
+import '../screens/admin_request_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
   static const String residentHome = '/resident-home';
   static const String adminHome = '/admin-home';
+  static const String adminRequests = '/admin-requests';
   static const String login = '/login';
   static const String register = '/register';
   static const String forgotPassword = '/forgot-password';
@@ -26,6 +28,7 @@ class AppRoutes {
     home: (context) => const HomeScreen(),
     residentHome: (context) => const ResidentHomeScreen(),
     adminHome: (context) => const AdminHomeScreen(),
+    adminRequests: (context) => const AdminRequestScreen(),
     login: (context) => const LoginScreen(),
     register: (context) => const RegisterScreen(),
     forgotPassword: (context) => const ForgotPasswordScreen(),

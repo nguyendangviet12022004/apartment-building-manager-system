@@ -13,22 +13,36 @@ class AdminHomeScreen extends StatelessWidget {
         actions: const [NotificationBell(), SizedBox(width: 8)],
       ),
       drawer: const AppDrawer(),
-      body: const Center(
+      body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
+            const Icon(
               Icons.dashboard_customize_outlined,
               size: 100,
               color: Colors.redAccent,
             ),
-            SizedBox(height: 16),
-            Text(
+            const SizedBox(height: 16),
+            const Text(
               'Welcome, Admin!',
               style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
             ),
-            SizedBox(height: 8),
-            Text('Manage the building operations from here.'),
+            const SizedBox(height: 8),
+            const Text('Manage the building operations from here.'),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () => Navigator.pushNamed(context, '/admin-requests'),
+              icon: const Icon(Icons.list_alt),
+              label: const Text('Manage Resident Requests'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.redAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 12,
+                ),
+              ),
+            ),
           ],
         ),
       ),
