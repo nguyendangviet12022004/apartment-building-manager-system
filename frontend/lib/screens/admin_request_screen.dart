@@ -166,6 +166,8 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                   style: TextStyle(fontWeight: FontWeight.bold),
                 ),
                 Text(request.description),
+                const SizedBox(height: 12),
+                if (request.media.isNotEmpty) _buildMediaGallery(request.media),
                 if (request.response != null) ...[
                   const Divider(),
                   const Text(
@@ -250,6 +252,119 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 Navigator.pop(context);
               },
               child: const Text('Save'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMediaGallery(List<RequestMediaModel> mediaList) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Media:',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+        ),
+        const SizedBox(height: 8),
+        SizedBox(
+          height: 100,
+          child: ListView.builder(
+            scrollDirection: Axis.horizontal,
+            itemCount: mediaList.length,
+            itemBuilder: (context, index) {
+              final media = mediaList[index];
+              return GestureDetector(
+                onTap: () => _showFullScreenMedia(media),
+                child: Container(
+                  width: 100,
+                  margin: const EdgeInsets.only(right: 8),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.grey[300]!),
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: media.type == MediaType.IMAGE
+                        ? Image.network(
+                            media.url,
+                            fit: BoxFit.cover,
+                            errorBuilder: (context, error, stackTrace) =>
+                                const Icon(Icons.error, color: Colors.red),
+                          )
+                        : Stack(
+                            alignment: Alignment.center,
+                            children: [
+                              const Icon(
+                                Icons.videocam,
+                                size: 40,
+                                color: Colors.blueAccent,
+                              ),
+                              Positioned(
+                                bottom: 4,
+                                child: Text(
+                                  'VIDEO',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.blueAccent[700],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                ),
+              );
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  void _showFullScreenMedia(RequestMediaModel media) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        insetPadding: EdgeInsets.zero,
+        child: Stack(
+          children: [
+            Center(
+              child: media.type == MediaType.IMAGE
+                  ? Image.network(media.url, fit: BoxFit.contain)
+                  : Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.play_circle_fill,
+                          size: 80,
+                          color: Colors.white,
+                        ),
+                        const SizedBox(height: 16),
+                        const Text(
+                          'Video playback requires extra plugins',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            // Optional: Launch URL in browser
+                          },
+                          child: const Text('Open in Browser'),
+                        ),
+                      ],
+                    ),
+            ),
+            Positioned(
+              top: 40,
+              right: 20,
+              child: IconButton(
+                icon: const Icon(Icons.close, color: Colors.white, size: 30),
+                onPressed: () => Navigator.pop(context),
+              ),
             ),
           ],
         ),

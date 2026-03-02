@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import '../models/request_model.dart';
 
@@ -58,14 +59,25 @@ class ApiRequestService {
     required int userId,
     required String title,
     required String description,
+    List<File>? files,
   }) async {
-    final response = await http.post(
-      Uri.parse('$_baseUrl/user/$userId?title=$title&description=$description'),
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': 'Bearer $token',
-      },
-    );
+    final uri = Uri.parse('$_baseUrl/user/$userId');
+    final request = http.MultipartRequest('POST', uri);
+
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['title'] = title;
+    request.fields['description'] = description;
+
+    if (files != null && files.isNotEmpty) {
+      for (var file in files) {
+        request.files.add(
+          await http.MultipartFile.fromPath('files', file.path),
+        );
+      }
+    }
+
+    final streamedResponse = await request.send();
+    final response = await http.Response.fromStream(streamedResponse);
 
     if (response.statusCode == 200) {
       return RequestModel.fromJson(jsonDecode(response.body));

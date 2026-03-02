@@ -1,5 +1,21 @@
 enum RequestStatus { PENDING, IN_PROGRESS, RESOLVED, REJECTED }
 
+enum MediaType { IMAGE, VIDEO }
+
+class RequestMediaModel {
+  final String url;
+  final MediaType type;
+
+  RequestMediaModel({required this.url, required this.type});
+
+  factory RequestMediaModel.fromJson(Map<String, dynamic> json) {
+    return RequestMediaModel(
+      url: json['url'],
+      type: MediaType.values.byName(json['type']),
+    );
+  }
+}
+
 class RequestModel {
   final int id;
   final String title;
@@ -11,6 +27,7 @@ class RequestModel {
   final int userId;
   final String userEmail;
   final String userFullName;
+  final List<RequestMediaModel> media;
 
   RequestModel({
     required this.id,
@@ -23,6 +40,7 @@ class RequestModel {
     required this.userId,
     required this.userEmail,
     required this.userFullName,
+    required this.media,
   });
 
   factory RequestModel.fromJson(Map<String, dynamic> json) {
@@ -39,22 +57,12 @@ class RequestModel {
       userId: json['userId'],
       userEmail: json['userEmail'],
       userFullName: json['userFullName'],
+      media:
+          (json['media'] as List<dynamic>?)
+              ?.map((m) => RequestMediaModel.fromJson(m))
+              .toList() ??
+          [],
     );
-  }
-
-  Map<String, dynamic> toJson() {
-    return {
-      'id': id,
-      'title': title,
-      'description': description,
-      'status': status.name,
-      'createdAt': createdAt.toIso8601String(),
-      'response': response,
-      'responseAt': responseAt?.toIso8601String(),
-      'userId': userId,
-      'userEmail': userEmail,
-      'userFullName': userFullName,
-    };
   }
 }
 
