@@ -1,6 +1,7 @@
 package com.viet.backend.service;
 
 import com.viet.backend.dto.ApartmentRequest;
+import com.viet.backend.dto.ApartmentResponse;
 import com.viet.backend.model.Apartment;
 import com.viet.backend.model.Block;
 import com.viet.backend.repository.ApartmentRepository;
@@ -17,7 +18,7 @@ public class ApartmentService {
     private final BlockRepository blockRepository;
 
     @Transactional
-    public Apartment createApartment(ApartmentRequest request) {
+    public ApartmentResponse createApartment(ApartmentRequest request) {
         Block block = blockRepository.findById(request.getBlockId())
                 .orElseThrow(() -> new RuntimeException("Block not found with id: " + request.getBlockId()));
 
@@ -37,20 +38,21 @@ public class ApartmentService {
                 .used(false)
                 .build();
 
-        return apartmentRepository.save(apartment);
+        return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
     }
 
     private void validateApartmentCode(String code, Block block, Integer floor) {
-        // Format: XXX-XXXX-XXX (Exactly 12 characters)
+        // Enforce BR-01: Exactly 12 characters, format XXX-XXXX-XXX
         if (code == null || !code.matches("^[A-Z0-9]{3}-[0-9]{4}-[A-Z0-9]{3}$")) {
-            throw new RuntimeException("Invalid apartment code format. Expected XXX-XXXX-XXX (12 chars)");
+            throw new RuntimeException("Invalid apartment code format. Expected XXX-XXXX-XXX (Exactly 12 chars)");
         }
 
         String[] segments = code.split("-");
 
-        // 1st segment: Building code (case-insensitive alphanumeric)
+        // 1st segment: Building code (3 characters)
         if (!segments[0].equalsIgnoreCase(block.getBlockCode())) {
-            throw new RuntimeException("First segment must match building code: " + block.getBlockCode());
+            throw new RuntimeException(
+                    "First segment (" + segments[0] + ") must match building code: " + block.getBlockCode());
         }
 
         // 2nd segment: Floor (2 digits) + Unit (2 digits)
@@ -59,14 +61,13 @@ public class ApartmentService {
             throw new RuntimeException("Floor segment (" + codeFloor + ") does not match provided floor: " + floor);
         }
 
-        // 3rd segment: Checksum verification (Simple sum-based for demo)
+        // 3rd segment: Checksum verification
         if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
             throw new RuntimeException("Invalid checksum segment. Typos detected.");
         }
     }
 
     private boolean isValidChecksum(String data, String checksum) {
-        // Simple logic: sum of chars % 1000 converted to hex/alphanumeric
         int sum = 0;
         for (char c : data.toCharArray())
             sum += c;

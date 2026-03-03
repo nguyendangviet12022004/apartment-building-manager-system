@@ -1,7 +1,7 @@
 package com.viet.backend.controller;
 
 import com.viet.backend.dto.ApartmentRequest;
-import com.viet.backend.model.Apartment;
+import com.viet.backend.dto.ApartmentResponse;
 import com.viet.backend.service.ApartmentService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ public class ApartmentController {
     private final ApartmentService apartmentService;
 
     @PostMapping
-    public ResponseEntity<Apartment> createApartment(@Valid @RequestBody ApartmentRequest request) {
+    public ResponseEntity<ApartmentResponse> createApartment(@Valid @RequestBody ApartmentRequest request) {
         return ResponseEntity.ok(apartmentService.createApartment(request));
     }
 }
