@@ -15,8 +15,13 @@ public class BlockService {
 
     @Transactional
     public Block createBlock(BlockRequest request) {
-        if (blockRepository.findByBlockCode(request.getBlockCode()).isPresent()) {
-            throw new RuntimeException("Block code already exists: " + request.getBlockCode());
+        String code = request.getBlockCode();
+        if (code == null || code.length() != 3) {
+            throw new RuntimeException("Block code must be exactly 3 characters for BR-01 compliance");
+        }
+
+        if (blockRepository.findByBlockCode(code).isPresent()) {
+            throw new RuntimeException("Block code already exists: " + code);
         }
 
         Block block = Block.builder()

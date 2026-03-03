@@ -3,6 +3,8 @@ package com.viet.backend.model;
 import jakarta.persistence.*;
 import lombok.*;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "requests")
@@ -21,6 +23,10 @@ public class Request {
 
     private String title;
     private String description;
+
+    @OneToMany(mappedBy = "request", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default
+    private List<RequestMedia> media = new ArrayList<>();
 
     @Enumerated(EnumType.STRING)
     private RequestStatus status;

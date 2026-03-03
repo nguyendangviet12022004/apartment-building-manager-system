@@ -116,9 +116,7 @@ class AuthService {
 
   Future<int> verifyApartmentCode(String code) async {
     final response = await http.post(
-      Uri.parse(
-        'http://10.0.2.2:8080/api/v1/apartment-codes/verify?code=$code',
-      ),
+      Uri.parse('$baseUrl/apartment-codes/verify?code=$code'),
       headers: {'Content-Type': 'application/json'},
     );
 
