@@ -21,8 +21,12 @@ public class RequestResponse {
     private String description;
     private Request.RequestStatus status;
     private LocalDateTime createdAt;
+
+    // Flattened AdminResponse for easier frontend consumption
     private String response;
     private LocalDateTime responseAt;
+    private String adminName;
+
     private Integer userId;
     private String userEmail;
     private String userFullName;
@@ -38,14 +42,12 @@ public class RequestResponse {
     }
 
     public static RequestResponse fromEntity(Request request) {
-        return RequestResponse.builder()
+        RequestResponseBuilder builder = RequestResponse.builder()
                 .id(request.getId())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .status(request.getStatus())
                 .createdAt(request.getCreatedAt())
-                .response(request.getResponse())
-                .responseAt(request.getResponseAt())
                 .userId(request.getUser().getId())
                 .userEmail(request.getUser().getEmail())
                 .userFullName(request.getUser().getFirstname() + " " + request.getUser().getLastname())
@@ -54,7 +56,17 @@ public class RequestResponse {
                                 .url(m.getUrl())
                                 .type(m.getMediaType())
                                 .build())
-                        .collect(Collectors.toList()))
-                .build();
+                        .collect(Collectors.toList()));
+
+        if (request.getAdminResponse() != null) {
+            builder.response(request.getAdminResponse().getContent())
+                    .responseAt(request.getAdminResponse().getRespondedAt());
+            if (request.getAdminResponse().getAdmin() != null) {
+                builder.adminName(request.getAdminResponse().getAdmin().getFirstname() + " " +
+                        request.getAdminResponse().getAdmin().getLastname());
+            }
+        }
+
+        return builder.build();
     }
 }

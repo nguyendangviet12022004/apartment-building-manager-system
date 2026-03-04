@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
+import '../routes/app_routes.dart';
 
 class AdminRequestScreen extends StatefulWidget {
   const AdminRequestScreen({super.key});
@@ -112,10 +113,7 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
       case RequestStatus.PENDING:
         statusColor = Colors.orange;
         break;
-      case RequestStatus.IN_PROGRESS:
-        statusColor = Colors.blue;
-        break;
-      case RequestStatus.RESOLVED:
+      case RequestStatus.APPROVED:
         statusColor = Colors.green;
         break;
       case RequestStatus.REJECTED:
@@ -170,9 +168,12 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 if (request.media.isNotEmpty) _buildMediaGallery(request.media),
                 if (request.response != null) ...[
                   const Divider(),
-                  const Text(
-                    'Response:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    'Admin Response (${request.adminName ?? "Admin"}):',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueAccent,
+                    ),
                   ),
                   Text(request.response!),
                   Text(
@@ -184,11 +185,21 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
-                    if (request.status != RequestStatus.RESOLVED &&
-                        request.status != RequestStatus.REJECTED)
-                      ElevatedButton(
-                        onPressed: () => _showUpdateStatusDialog(request),
-                        child: const Text('Update Status'),
+                    if (request.status == RequestStatus.PENDING)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.reply),
+                        label: const Text('Response'),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.requestDetailResponse,
+                            arguments: request,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                   ],
                 ),
@@ -196,65 +207,6 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showUpdateStatusDialog(RequestModel request) {
-    final TextEditingController responseController = TextEditingController(
-      text: request.response,
-    );
-    RequestStatus selectedStatus = request.status;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Update Request'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<RequestStatus>(
-                value: selectedStatus,
-                isExpanded: true,
-                onChanged: (val) => setState(() => selectedStatus = val!),
-                items: RequestStatus.values
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
-                    .toList(),
-              ),
-              TextField(
-                controller: responseController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Admin Response',
-                  hintText: 'Enter your response here...',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final authProvider = Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                );
-                await context.read<RequestProvider>().updateRequestStatus(
-                  authProvider.accessToken!,
-                  request.id,
-                  selectedStatus,
-                  responseController.text,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
       ),
     );
   }

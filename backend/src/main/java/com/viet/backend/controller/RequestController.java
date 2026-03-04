@@ -51,8 +51,9 @@ public class RequestController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<RequestResponse> updateStatus(
             @PathVariable Long requestId,
+            @RequestHeader("X-User-ID") Integer adminId,
             @RequestParam Request.RequestStatus status,
             @RequestParam(required = false) String response) {
-        return ResponseEntity.ok(requestService.updateStatus(requestId, status, response));
+        return ResponseEntity.ok(requestService.updateStatus(requestId, adminId, status, response));
     }
 }

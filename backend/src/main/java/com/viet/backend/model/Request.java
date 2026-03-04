@@ -32,10 +32,11 @@ public class Request {
     private RequestStatus status;
 
     private LocalDateTime createdAt;
-    private String response;
-    private LocalDateTime responseAt;
+
+    @OneToOne(mappedBy = "request", cascade = CascadeType.ALL)
+    private AdminResponse adminResponse;
 
     public enum RequestStatus {
-        PENDING, IN_PROGRESS, RESOLVED, REJECTED
+        PENDING, APPROVED, REJECTED
     }
 }

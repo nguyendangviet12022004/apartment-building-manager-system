@@ -1,4 +1,4 @@
-enum RequestStatus { PENDING, IN_PROGRESS, RESOLVED, REJECTED }
+enum RequestStatus { PENDING, APPROVED, REJECTED }
 
 enum MediaType { IMAGE, VIDEO }
 
@@ -24,6 +24,7 @@ class RequestModel {
   final DateTime createdAt;
   final String? response;
   final DateTime? responseAt;
+  final String? adminName;
   final int userId;
   final String userEmail;
   final String userFullName;
@@ -37,6 +38,7 @@ class RequestModel {
     required this.createdAt,
     this.response,
     this.responseAt,
+    this.adminName,
     required this.userId,
     required this.userEmail,
     required this.userFullName,
@@ -54,6 +56,7 @@ class RequestModel {
       responseAt: json['responseAt'] != null
           ? DateTime.parse(json['responseAt'])
           : null,
+      adminName: json['adminName'],
       userId: json['userId'],
       userEmail: json['userEmail'],
       userFullName: json['userFullName'],
