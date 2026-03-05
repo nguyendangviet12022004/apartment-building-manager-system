@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -55,5 +56,13 @@ public class RequestController {
             @RequestParam Request.RequestStatus status,
             @RequestParam(required = false) String response) {
         return ResponseEntity.ok(requestService.updateStatus(requestId, adminId, status, response));
+    }
+
+    @PatchMapping("/{requestId}/timeline")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<RequestResponse> setTimeline(
+            @PathVariable Long requestId,
+            @RequestParam LocalDateTime solvedBy) {
+        return ResponseEntity.ok(requestService.setTimeline(requestId, solvedBy));
     }
 }

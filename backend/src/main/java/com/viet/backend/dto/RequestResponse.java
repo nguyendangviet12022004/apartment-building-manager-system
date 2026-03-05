@@ -21,6 +21,7 @@ public class RequestResponse {
     private String description;
     private Request.RequestStatus status;
     private LocalDateTime createdAt;
+    private LocalDateTime solvedBy;
 
     // Flattened AdminResponse for easier frontend consumption
     private String response;
@@ -48,6 +49,7 @@ public class RequestResponse {
                 .description(request.getDescription())
                 .status(request.getStatus())
                 .createdAt(request.getCreatedAt())
+                .solvedBy(request.getSolvedBy())
                 .userId(request.getUser().getId())
                 .userEmail(request.getUser().getEmail())
                 .userFullName(request.getUser().getFirstname() + " " + request.getUser().getLastname())

@@ -44,6 +44,42 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
     }
   }
 
+  Future<void> _selectTimeline(RequestModel request) async {
+    final DateTime initialDate =
+        request.solvedBy ?? DateTime.now().add(const Duration(days: 1));
+    final DateTime firstDate = request.createdAt;
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(firstDate) ? firstDate : initialDate,
+      firstDate: firstDate,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Set timeline to solve issue',
+    );
+
+    if (picked != null && mounted) {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await context.read<RequestProvider>().setRequestTimeline(
+          authProvider.accessToken!,
+          request.id,
+          picked,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Timeline updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
+    }
+  }
+
   @override
   void dispose() {
     _scrollController.dispose();
@@ -135,20 +171,40 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
           children: [
             Text('From: ${request.userFullName}'),
             const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withAlpha(50),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                request.status.name,
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withAlpha(50),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    request.status.name,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                if (request.solvedBy != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.timer, size: 14, color: Colors.blue[700]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Due: ${request.solvedBy.toString().substring(0, 10)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -183,8 +239,20 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 ],
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
+                    if (request.status == RequestStatus.PENDING)
+                      TextButton.icon(
+                        icon: const Icon(Icons.calendar_today, size: 18),
+                        label: Text(
+                          request.solvedBy == null
+                              ? 'Set Timeline'
+                              : 'Update Timeline',
+                        ),
+                        onPressed: () => _selectTimeline(request),
+                      )
+                    else
+                      const SizedBox.shrink(),
                     if (request.status == RequestStatus.PENDING)
                       ElevatedButton.icon(
                         icon: const Icon(Icons.reply),

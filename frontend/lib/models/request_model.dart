@@ -22,6 +22,7 @@ class RequestModel {
   final String description;
   final RequestStatus status;
   final DateTime createdAt;
+  final DateTime? solvedBy;
   final String? response;
   final DateTime? responseAt;
   final String? adminName;
@@ -36,6 +37,7 @@ class RequestModel {
     required this.description,
     required this.status,
     required this.createdAt,
+    this.solvedBy,
     this.response,
     this.responseAt,
     this.adminName,
@@ -52,6 +54,9 @@ class RequestModel {
       description: json['description'],
       status: RequestStatus.values.byName(json['status']),
       createdAt: DateTime.parse(json['createdAt']),
+      solvedBy: json['solvedBy'] != null
+          ? DateTime.parse(json['solvedBy'])
+          : null,
       response: json['response'],
       responseAt: json['responseAt'] != null
           ? DateTime.parse(json['responseAt'])

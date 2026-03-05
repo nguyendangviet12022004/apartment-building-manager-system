@@ -36,6 +36,8 @@ public class Request {
     @OneToOne(mappedBy = "request", cascade = CascadeType.ALL)
     private AdminResponse adminResponse;
 
+    private LocalDateTime solvedBy;
+
     public enum RequestStatus {
         PENDING, APPROVED, REJECTED
     }

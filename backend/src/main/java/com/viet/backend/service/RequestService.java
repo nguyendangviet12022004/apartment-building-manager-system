@@ -115,4 +115,21 @@ public class RequestService {
 
         return RequestResponse.fromEntity(requestRepository.save(request));
     }
+
+    @Transactional
+    public RequestResponse setTimeline(Long requestId, LocalDateTime solvedBy) {
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() != Request.RequestStatus.PENDING) {
+            throw new RuntimeException("Timeline can only be set for PENDING requests");
+        }
+
+        if (solvedBy.isBefore(request.getCreatedAt())) {
+            throw new RuntimeException("Solved by date cannot be before request creation date");
+        }
+
+        request.setSolvedBy(solvedBy);
+        return RequestResponse.fromEntity(requestRepository.save(request));
+    }
 }
