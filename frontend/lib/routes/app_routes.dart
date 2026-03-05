@@ -10,6 +10,8 @@ import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/apartment_verify_screen.dart';
 import '../screens/admin_request_screen.dart';
+import '../screens/request_detail_response_screen.dart';
+import '../models/request_model.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -23,6 +25,7 @@ class AppRoutes {
   static const String changePassword = '/change-password';
   static const String verifyApartment = '/verify-apartment';
   static const String notifications = '/notifications';
+  static const String requestDetailResponse = '/admin/request-response';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -36,5 +39,10 @@ class AppRoutes {
     changePassword: (context) => const ChangePasswordScreen(),
     verifyApartment: (context) => const ApartmentVerifyScreen(),
     notifications: (context) => const NotificationsScreen(),
+    requestDetailResponse: (context) {
+      final request =
+          ModalRoute.of(context)!.settings.arguments as RequestModel;
+      return RequestDetailResponseScreen(request: request);
+    },
   };
 }

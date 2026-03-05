@@ -1,6 +1,7 @@
 package com.viet.backend.service;
 
 import com.viet.backend.dto.RequestResponse;
+import com.viet.backend.model.AdminResponse;
 import com.viet.backend.model.Request;
 import com.viet.backend.model.RequestMedia;
 import com.viet.backend.model.User;
@@ -89,14 +90,46 @@ public class RequestService {
     }
 
     @Transactional
-    public RequestResponse updateStatus(Long requestId, Request.RequestStatus status, String response) {
+    public RequestResponse updateStatus(Long requestId, Integer adminId, Request.RequestStatus status,
+            String responseContent) {
         Request request = requestRepository.findById(requestId)
                 .orElseThrow(() -> new RuntimeException("Request not found"));
 
-        request.setStatus(status);
-        request.setResponse(response);
-        request.setResponseAt(LocalDateTime.now());
+        User admin = userRepository.findById(adminId)
+                .orElseThrow(() -> new RuntimeException("Admin user not found"));
 
+        request.setStatus(status);
+
+        // Create or update AdminResponse entity
+        AdminResponse adminResponse = request.getAdminResponse();
+        if (adminResponse == null) {
+            adminResponse = AdminResponse.builder()
+                    .request(request)
+                    .build();
+            request.setAdminResponse(adminResponse);
+        }
+
+        adminResponse.setContent(responseContent);
+        adminResponse.setRespondedAt(LocalDateTime.now());
+        adminResponse.setAdmin(admin);
+
+        return RequestResponse.fromEntity(requestRepository.save(request));
+    }
+
+    @Transactional
+    public RequestResponse setTimeline(Long requestId, LocalDateTime solvedBy) {
+        Request request = requestRepository.findById(requestId)
+                .orElseThrow(() -> new RuntimeException("Request not found"));
+
+        if (request.getStatus() != Request.RequestStatus.PENDING) {
+            throw new RuntimeException("Timeline can only be set for PENDING requests");
+        }
+
+        if (solvedBy.isBefore(request.getCreatedAt())) {
+            throw new RuntimeException("Solved by date cannot be before request creation date");
+        }
+
+        request.setSolvedBy(solvedBy);
         return RequestResponse.fromEntity(requestRepository.save(request));
     }
 }

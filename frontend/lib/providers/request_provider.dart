@@ -81,4 +81,28 @@ class RequestProvider with ChangeNotifier {
       rethrow;
     }
   }
+
+  Future<void> setRequestTimeline(
+    String token,
+    int requestId,
+    DateTime solvedBy,
+  ) async {
+    try {
+      final updatedRequest = await _apiService.updateTimeline(
+        token: token,
+        requestId: requestId,
+        solvedBy: solvedBy,
+      );
+
+      // Update local state
+      final index = _requests.indexWhere((r) => r.id == requestId);
+      if (index != -1) {
+        _requests[index] = updatedRequest;
+        notifyListeners();
+      }
+    } catch (e) {
+      print('Error setting request timeline: $e');
+      rethrow;
+    }
+  }
 }
