@@ -10,6 +10,8 @@ import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/apartment_verify_screen.dart';
 import '../screens/admin_request_screen.dart';
+import '../screens/bills_page.dart';
+import '../screens/create_invoice_page.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -23,6 +25,8 @@ class AppRoutes {
   static const String changePassword = '/change-password';
   static const String verifyApartment = '/verify-apartment';
   static const String notifications = '/notifications';
+  static const String bills = '/bills';
+  static const String createInvoice = '/create-invoice';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -36,5 +40,7 @@ class AppRoutes {
     changePassword: (context) => const ChangePasswordScreen(),
     verifyApartment: (context) => const ApartmentVerifyScreen(),
     notifications: (context) => const NotificationsScreen(),
+    createInvoice: (context) => const CreateInvoicePage(),
+    // bills: (context) => const BillsPage(),
   };
 }

@@ -1,12 +1,13 @@
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
   // Use 10.0.2.2 for Android Emulator to access localhost
   // Or your machine's IP address for physical devices
-  // static const String baseUrl = 'http://localhost:8080/api/v1/auth';
+  static const String baseUrl = 'http://localhost:8080/api/v1/auth';
 
-  static const String baseUrl = 'http://10.0.2.2:8080/api/v1/auth';
+  // static const String baseUrl = 'http://10.0.2.2:8080/api/v1/auth';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(
@@ -16,6 +17,30 @@ class AuthService {
     );
 
     return _handleResponse(response);
+  }
+
+  Future<int?> fetchApartmentId(int userId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    final uri = Uri.parse(
+      '$baseUrl/apartments/my',
+    ).replace(queryParameters: {'userId': userId.toString()});
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final data = jsonDecode(response.body);
+      return data['apartmentId'] as int?;
+    }
+    // 404 = chưa có apartment, không phải lỗi
+    return null;
   }
 
   Future<Map<String, dynamic>> register({
@@ -116,7 +141,9 @@ class AuthService {
 
   Future<int> verifyApartmentCode(String code) async {
     final response = await http.post(
-      Uri.parse('$baseUrl/apartment-codes/verify?code=$code'),
+      Uri.parse(
+        'http://localhost:8080/api/v1/apartment-codes/verify?code=$code',
+      ),
       headers: {'Content-Type': 'application/json'},
     );
 

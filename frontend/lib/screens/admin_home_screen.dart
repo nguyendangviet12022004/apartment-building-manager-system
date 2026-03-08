@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/app_drawer.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../screens/create_invoice_page.dart';
+import '../routes/app_routes.dart';
 
 class AdminHomeScreen extends StatelessWidget {
   const AdminHomeScreen({super.key});
@@ -250,16 +254,16 @@ class Body extends StatelessWidget {
 
   // ── Quick Actions ────────────────────────────────────────
   static const _row1 = [
-    (Icons.receipt_long, 'Invoice'),
-    (Icons.spa_outlined, 'Amentity'),
-    (Icons.newspaper, 'News'),
-    (Icons.bar_chart, 'Report'),
-    (Icons.people_outline, 'Resident'),
+    (Icons.receipt_long, 'Invoice', AppRoutes.createInvoice),
+    (Icons.spa_outlined, 'Amenity', null),
+    (Icons.newspaper, 'News', null),
+    (Icons.bar_chart, 'Report', null),
+    (Icons.people_outline, 'Resident', null),
   ];
 
   static const _row2 = [
-    (Icons.apartment, 'Apartment'),
-    (Icons.directions_car_outlined, 'Vehicle'),
+    (Icons.apartment, 'Apartment', null),
+    (Icons.directions_car_outlined, 'Vehicle', null),
   ];
 
   Widget _buildQuickActions() {
@@ -277,62 +281,101 @@ class Body extends StatelessWidget {
           ),
         ],
       ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _row1.map((e) => _buildActionItem(e.$1, e.$2)).toList(),
-          ),
-          const SizedBox(height: 12),
-          Row(
-            // children: [
-            //   const SizedBox(width: 8),
-            //   ..._row2.map(
-            //     (e) => Padding(
-            //       padding: const EdgeInsets.only(right: 4),
-            //       child: SizedBox(
-            //         width: 64,
-            //         child: _buildActionItem(e.$1, e.$2),
-            //       ),
-            //     ),
-            //   ),
-            // ],
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _row2.map((e) => _buildActionItem(e.$1, e.$2)).toList(),
-          ),
-        ],
+      child: Builder(
+        builder: (ctx) => Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: _row1
+                  .map((e) => _buildActionItem(ctx, e.$1, e.$2, e.$3))
+                  .toList(),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: _row2
+                  .map((e) => _buildActionItem(ctx, e.$1, e.$2, e.$3))
+                  .toList(),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label) {
+  Widget _buildActionItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String? route,
+  ) {
     return SizedBox(
       width: 60,
-      child: Column(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              color: _primary.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Icon(icon, color: _primary, size: 22),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            debugPrint('>>> tap: $label / $route');
+            if (route == null) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('$label — Coming soon'),
+                  behavior: SnackBarBehavior.floating,
+                  duration: const Duration(seconds: 1),
+                ),
+              );
+              return;
+            }
+            Navigator.of(context, rootNavigator: true).pushNamed(route);
+          },
+          child: Column(
+            children: [
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Icon(icon, color: _primary, size: 22),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                label,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  color: Color(0xFF4B5563),
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                  fontFamily: 'Inter',
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 8),
-          Text(
-            label,
-            textAlign: TextAlign.center,
-            style: const TextStyle(
-              color: Color(0xFF4B5563),
-              fontSize: 12,
-              fontWeight: FontWeight.w500,
-              fontFamily: 'Inter',
-            ),
-          ),
-        ],
+        ),
       ),
     );
+  }
+
+  void _onActionTap(BuildContext context, String? route, String label) {
+    debugPrint('>>> _onActionTap: label=$label, route=$route');
+    debugPrint('>>> Navigator: ${Navigator.of(context)}');
+
+    if (route == null) {
+      debugPrint('>>> route is null → showSnackBar');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$label — Coming soon'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+
+    debugPrint('>>> pushNamed: $route');
+    Navigator.of(context, rootNavigator: true).pushNamed(route);
   }
 
   // ── Notifications ────────────────────────────────────────

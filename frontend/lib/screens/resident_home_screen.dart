@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/app_drawer.dart';
+import '../routes/app_routes.dart';
+import 'package:provider/provider.dart';
+import '../providers/auth_provider.dart';
+import '../screens/bills_page.dart';
 
 class ResidentHomeScreen extends StatelessWidget {
   const ResidentHomeScreen({super.key});
@@ -264,11 +268,11 @@ class Body extends StatelessWidget {
   // ── Quick Actions (overlaps header) ─────────────────────
   Widget _buildQuickActions() {
     final actions = [
-      (Icons.credit_card, 'My Bills'),
-      (Icons.calendar_today, 'Booking'),
-      (Icons.newspaper, 'News'),
-      (Icons.chat_bubble_outline, 'Feedback'),
-      (Icons.inventory_2_outlined, 'Parcels'),
+      (Icons.credit_card, 'My Bills', AppRoutes.bills),
+      (Icons.calendar_today, 'Booking', null),
+      (Icons.newspaper, 'News', null),
+      (Icons.chat_bubble_outline, 'Feedback', null),
+      (Icons.inventory_2_outlined, 'Parcels', null),
     ];
 
     return Container(
@@ -285,37 +289,83 @@ class Body extends StatelessWidget {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceAround,
-        children: actions.map((a) => _buildActionItem(a.$1, a.$2)).toList(),
+      child: Builder(
+        builder: (context) => Row(
+          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          children: actions
+              .map((a) => _buildActionItem(context, a.$1, a.$2, a.$3))
+              .toList(),
+        ),
       ),
     );
   }
 
-  Widget _buildActionItem(IconData icon, String label) {
-    return Column(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            color: _blue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(16),
+  Widget _buildActionItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    String? route,
+  ) {
+    return GestureDetector(
+      onTap: () => _onActionTap(context, route, label),
+      child: Column(
+        children: [
+          Container(
+            width: 48,
+            height: 48,
+            decoration: BoxDecoration(
+              color: _blue.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(icon, color: _blue, size: 22),
           ),
-          child: Icon(icon, color: _blue, size: 22),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          label,
-          style: const TextStyle(
-            color: Color(0xFF4B5563),
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            fontFamily: 'Inter',
+          const SizedBox(height: 8),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Color(0xFF4B5563),
+              fontSize: 12,
+              fontWeight: FontWeight.w500,
+              fontFamily: 'Inter',
+            ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
+  }
+
+  void _onActionTap(BuildContext context, String? route, String label) {
+    if (route == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('$label — Coming soon'),
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 1),
+        ),
+      );
+      return;
+    }
+
+    if (route == AppRoutes.bills) {
+      final apartmentId = context.read<AuthProvider>().apartmentId;
+      if (apartmentId == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Apartment not verified yet'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+        return;
+      }
+      // Dùng Navigator.push trực tiếp — tránh conflict với Consumer rebuild
+      Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => BillsPage(apartmentId: apartmentId)),
+      );
+      return;
+    }
+
+    Navigator.pushNamed(context, route);
   }
 
   // ── Amenities Banner ─────────────────────────────────────

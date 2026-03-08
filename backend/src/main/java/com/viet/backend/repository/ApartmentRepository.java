@@ -25,4 +25,20 @@ public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
     List<Apartment> findByStatus(String status);
 
     List<Apartment> findByResidentId(Long residentId);
+
+    // Tìm apartment theo userId (User → Resident → Apartment)
+    Optional<Apartment> findByResidentUserId(Integer userId);
+
+    List<Apartment> findAll();
+
+    List<Apartment> findByUsed(boolean used);
+
+    @Query("""
+        SELECT a FROM Apartment a
+        LEFT JOIN FETCH a.block
+        LEFT JOIN FETCH a.resident r
+        LEFT JOIN FETCH r.user
+        WHERE (:used IS NULL OR a.used = :used)
+    """)
+    List<Apartment> findAllWithDetails(@Param("used") Boolean used);
 }

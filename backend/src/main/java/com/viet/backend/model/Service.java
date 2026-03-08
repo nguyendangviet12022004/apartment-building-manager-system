@@ -11,17 +11,39 @@ import java.math.BigDecimal;
 @AllArgsConstructor
 @Builder
 public class Service {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @Column(nullable = false)
-    private String serviceName;
+    private String serviceName;       // e.g. "Electricity", "Water", "Management Fee"
 
-    private String unit; // e.g., m3, kWh, month
+    private String unit;              // e.g. "kWh", "m³", "month", "vehicle"
 
     @Column(precision = 13, scale = 2)
-    private BigDecimal unitPrice;
+    private BigDecimal unitPrice;     // price per unit (VND)
 
     private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    @Builder.Default
+    private ServiceType serviceType = ServiceType.METERED;
+
+    // true  → manager inputs usage (quantity × unitPrice)
+    // false → fixed amount per period regardless of usage
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean metered = true;
+
+    @Column(nullable = false)
+    @Builder.Default
+    private boolean active = true;    // soft-delete / disable unused services
+
+    public enum ServiceType {
+        METERED,   // điện, nước → quantity × unitPrice
+        FIXED,     // quản lí, vệ sinh → unitPrice là tổng cố định
+        PARKING    // xe → quantity (số xe) × unitPrice
+    }
 }
