@@ -38,6 +38,8 @@ public class Invoice {
 
     private LocalDateTime invoiceDate;
     private LocalDateTime dueDate;
+    @Column(name = "transaction_id")
+    private String transactionId;
     private LocalDateTime createdAt;
 
     @Enumerated(EnumType.STRING)

@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 class AuthService {
   // Use 10.0.2.2 for Android Emulator to access localhost
   // Or your machine's IP address for physical devices
-  static const String baseUrl = 'http://localhost:8080/api/v1/auth';
+  // static const String baseUrl = 'http://localhost:8080/api/v1/auth';
 
-  // static const String baseUrl = 'http://10.0.2.2:8080/api/v1/auth';
+  static const String baseUrl = 'http://10.0.2.2:8080/api/v1/auth';
 
   Future<Map<String, dynamic>> login(String email, String password) async {
     final response = await http.post(

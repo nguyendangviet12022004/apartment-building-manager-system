@@ -46,6 +46,12 @@ public class InvoiceService {
         return page.map(this::toResponse);
     }
 
+    public InvoiceDTO.Response getByCode(String invoiceCode) {
+        Invoice inv = invoiceRepository.findByInvoiceCode(invoiceCode)
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + invoiceCode));
+        return toResponse(inv);
+    }
+
     public InvoiceDTO.Response getById(Long id) {
         return toResponse(invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found: " + id)));
@@ -111,6 +117,13 @@ public class InvoiceService {
     }
 
     @Transactional
+    // Overload cho VNPay callback (nhận String thay vì DTO)
+    public void updateStatus(long id, String statusStr) {
+        var req = new InvoiceDTO.StatusUpdate();
+        req.setStatus(InvoiceStatus.valueOf(statusStr));
+        updateStatus((Long) id, req);
+    }
+
     public InvoiceDTO.Response updateStatus(Long id, InvoiceDTO.StatusUpdate req) {
         Invoice inv = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found: " + id));
@@ -158,11 +171,31 @@ public class InvoiceService {
                 })
                 .collect(Collectors.toList());
 
+        // Apartment detail
+        Integer aptFloor = null;
+        Double  aptArea  = null;
+        String  blockCode = null;
+        String  residentName = null;
+        if (inv.getApartment() != null) {
+            var apt = inv.getApartment();
+            aptFloor = apt.getFloor();
+            aptArea  = apt.getArea();
+            if (apt.getBlock() != null)    blockCode    = apt.getBlock().getBlockCode();
+            if (apt.getResident() != null && apt.getResident().getUser() != null) {
+                var u = apt.getResident().getUser();
+                residentName = u.getFirstname() + " " + u.getLastname();
+            }
+        }
+
         return InvoiceDTO.Response.builder()
                 .id(inv.getId())
                 .invoiceCode(inv.getInvoiceCode())
                 .apartmentId(inv.getApartment() != null ? inv.getApartment().getId() : null)
                 .apartmentCode(inv.getApartment() != null ? inv.getApartment().getApartmentCode() : null)
+                .apartmentFloor(aptFloor)
+                .apartmentArea(aptArea)
+                .blockCode(blockCode)
+                .residentName(residentName)
                 .subtotal(inv.getSubtotal())
                 .lateFee(inv.getLateFee())
                 .total(inv.getTotal())

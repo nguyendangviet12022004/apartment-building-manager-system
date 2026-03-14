@@ -55,6 +55,13 @@ public class InvoiceController {
         return ResponseEntity.ok(invoiceService.getById(id));
     }
 
+    // Poll từ Flutter để kiểm tra trạng thái sau khi user dùng app ngân hàng
+    @GetMapping("/code/{invoiceCode}")
+    public ResponseEntity<InvoiceDTO.Response> getByCode(
+            @PathVariable String invoiceCode) {
+        return ResponseEntity.ok(invoiceService.getByCode(invoiceCode));
+    }
+
     // ────────────────────────────────────────────────────
     // POST /api/v1/invoices
     // ────────────────────────────────────────────────────
@@ -68,12 +75,12 @@ public class InvoiceController {
     // ────────────────────────────────────────────────────
     // PUT /api/v1/invoices/{id}
     // ────────────────────────────────────────────────────
-//    @PutMapping("/{id}")
-//    public ResponseEntity<InvoiceDTO.Response> update(
-//            @PathVariable Long id,
-//            @RequestBody InvoiceDTO.Request req) {
-//        return ResponseEntity.ok(invoiceService.update(id, req));
-//    }
+    // @PutMapping("/{id}")
+    // public ResponseEntity<InvoiceDTO.Response> update(
+    //         @PathVariable Long id,
+    //         @RequestBody InvoiceDTO.Request req) {
+    //     return ResponseEntity.ok(invoiceService.update(id, req));
+    // }
 
     // ────────────────────────────────────────────────────
     // PATCH /api/v1/invoices/{id}/status

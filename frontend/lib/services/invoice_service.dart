@@ -6,9 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import '../models/invoice_model.dart';
 
 class InvoiceService {
-  // static const _base = 'http://10.0.2.2:8080/api/v1/invoices';
-
-  static const String _base = 'http://localhost:8080/api/v1/invoices';
+  static const _base = 'http://10.0.2.2:8080/api/v1/invoices';
 
   // Lấy token từ SharedPreferences và build headers
   Future<Map<String, String>> _authHeaders() async {
@@ -21,6 +19,16 @@ class InvoiceService {
   }
 
   // ── Summary ──────────────────────────────────────────
+  Future<Invoice> getById(int id) async {
+    final res = await http.get(
+      Uri.parse('$_base/$id'),
+      headers: await _authHeaders(),
+    );
+    if (res.statusCode != 200)
+      throw Exception('Failed to load invoice: ${res.statusCode}');
+    return Invoice.fromJson(jsonDecode(res.body));
+  }
+
   Future<InvoiceSummary> getSummary(int apartmentId) async {
     final uri = Uri.parse(
       '$_base/summary',

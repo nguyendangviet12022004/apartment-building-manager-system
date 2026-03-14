@@ -24,6 +24,11 @@ public class InvoiceDTO {
         private long daysUntilDue;
         private List<ItemResponse> items;
         private List<String> serviceLabels;
+        // Apartment detail (cho invoice detail screen)
+        private Integer apartmentFloor;
+        private Double apartmentArea;
+        private String blockCode;
+        private String residentName;
     }
 
     @Data @Builder @NoArgsConstructor @AllArgsConstructor

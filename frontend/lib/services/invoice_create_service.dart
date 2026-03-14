@@ -6,13 +6,13 @@ import '../models/invoice_model.dart';
 import '../models/apartment_model.dart';
 
 class InvoiceCreateService {
-  // static const _baseInvoice = 'http://10.0.2.2:8080/api/v1/invoices';
-  // static const _baseService = 'http://10.0.2.2:8080/api/v1/services';
-  // static const _baseApartment = 'http://10.0.2.2:8080/api/v1/apartments';
+  static const _baseInvoice = 'http://10.0.2.2:8080/api/v1/invoices';
+  static const _baseService = 'http://10.0.2.2:8080/api/v1/services';
+  static const _baseApartment = 'http://10.0.2.2:8080/api/v1/apartments';
 
-  static const _baseInvoice = 'http://localhost:8080/api/v1/invoices';
-  static const _baseService = 'http://localhost:8080/api/v1/services';
-  static const _baseApartment = 'http://localhost:8080/api/v1/apartments';
+  // static const _baseInvoice = 'http://localhost:8080/api/v1/invoices';
+  // static const _baseService = 'http://localhost:8080/api/v1/services';
+  // static const _baseApartment = 'http://localhost:8080/api/v1/apartments';
 
   Future<Map<String, String>> _authHeaders() async {
     final prefs = await SharedPreferences.getInstance();

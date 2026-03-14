@@ -1,6 +1,11 @@
+// lib/screens/bills_page.dart
+
 import 'package:flutter/material.dart';
 import '../models/invoice_model.dart';
 import '../services/invoice_service.dart';
+import '../services/payment_service.dart';
+import '../screens/vnpay_webview_screen.dart';
+import '../screens/invoice_detail_screen.dart';
 
 class BillsPage extends StatefulWidget {
   final int apartmentId;
@@ -21,6 +26,7 @@ class _BillsPageState extends State<BillsPage> {
   static const _white = Color(0xFFFFFFFF);
 
   final _service = InvoiceService();
+  final _paymentService = PaymentService();
   final _scrollController = ScrollController();
 
   InvoiceSummary? _summary;
@@ -110,17 +116,59 @@ class _BillsPageState extends State<BillsPage> {
 
   Future<void> _payNow(Invoice inv) async {
     try {
-      final updated = await _service.payNow(inv.id);
-      setState(() {
-        final idx = _invoices.indexWhere((i) => i.id == inv.id);
-        if (idx != -1) _invoices[idx] = updated;
-      });
-      _loadSummary();
+      // 1. Lấy URL thanh toán từ BE
+      final result = await _paymentService.createPaymentUrl(inv.id);
+      final paymentUrl = result['paymentUrl']!;
+      final txnRef = result['txnRef']!;
+
+      if (!mounted) return;
+
+      // 2. Mở WebView VNPAY
+      final success = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (_) =>
+              VNPayWebViewScreen(paymentUrl: paymentUrl, txnRef: txnRef),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (success == true) {
+        // 3. Thanh toán thành công → reload invoice + summary
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Payment successful! 🎉'),
+            backgroundColor: const Color(0xFF16A34A),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+        await _loadSummary();
+        await _loadFirstPage();
+      } else if (success == false) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('Payment cancelled or failed'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(10),
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (mounted) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Payment failed: $e')));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error: $e'),
+            backgroundColor: const Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
       }
     }
   }
@@ -385,233 +433,248 @@ class _BillsPageState extends State<BillsPage> {
 
   Widget _buildBillCard(Invoice inv) {
     final (statusColor, statusBg) = _statusStyle(inv.status);
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: _white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: _black.withOpacity(0.06),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push<bool>(
+          context,
+          MaterialPageRoute(
+            builder: (_) => InvoiceDetailScreen(invoiceId: inv.id),
           ),
-        ],
-      ),
-      child: Column(
-        children: [
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: statusColor,
-              borderRadius: const BorderRadius.vertical(
-                top: Radius.circular(16),
+        );
+        // Nếu vừa thanh toán xong từ detail screen → reload list
+        if (result == true) {
+          await _loadSummary();
+          await _loadFirstPage();
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: _white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Column(
+          children: [
+            Container(
+              height: 4,
+              decoration: BoxDecoration(
+                color: statusColor,
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(16),
+                ),
               ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.receipt_long_rounded,
+                            size: 14,
+                            color: _grey,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            inv.invoiceCode,
+                            style: TextStyle(
+                              color: _grey,
+                              fontSize: 12,
+                              fontFamily: 'Inter',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusBg,
+                          borderRadius: BorderRadius.circular(25),
+                        ),
+                        child: Text(
+                          inv.status.label,
+                          style: TextStyle(
+                            color: statusColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            fontFamily: 'Inter',
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    inv.monthLabel,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                      color: _black,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  if (inv.dueLabel.isNotEmpty)
                     Row(
                       children: [
                         Icon(
-                          Icons.receipt_long_rounded,
-                          size: 14,
+                          Icons.calendar_today_rounded,
+                          size: 12,
                           color: _grey,
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          inv.invoiceCode,
+                          inv.dueLabel,
                           style: TextStyle(
-                            color: _grey,
+                            color: inv.daysUntilDue < 0
+                                ? const Color(0xFFEF4444)
+                                : inv.daysUntilDue <= 3
+                                ? _orange
+                                : _grey,
                             fontSize: 12,
                             fontFamily: 'Inter',
                           ),
                         ),
                       ],
                     ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: statusBg,
-                        borderRadius: BorderRadius.circular(25),
-                      ),
-                      child: Text(
-                        inv.status.label,
-                        style: TextStyle(
-                          color: statusColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w600,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  inv.monthLabel,
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    fontFamily: 'Inter',
-                    color: _black,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                if (inv.dueLabel.isNotEmpty)
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today_rounded,
-                        size: 12,
-                        color: _grey,
-                      ),
-                      const SizedBox(width: 5),
-                      Text(
-                        inv.dueLabel,
-                        style: TextStyle(
-                          color: inv.daysUntilDue < 0
-                              ? const Color(0xFFEF4444)
-                              : inv.daysUntilDue <= 3
-                              ? _orange
-                              : _grey,
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 4),
-                if (inv.serviceLabels.isNotEmpty)
-                  Row(
-                    children: [
-                      Icon(Icons.bolt_rounded, size: 13, color: _grey),
-                      const SizedBox(width: 5),
-                      Text(
-                        inv.serviceLabels.join(' · '),
-                        style: TextStyle(
-                          color: _charcoal,
-                          fontSize: 12,
-                          fontFamily: 'Inter',
-                        ),
-                      ),
-                    ],
-                  ),
-                const SizedBox(height: 14),
-                const Divider(height: 1, color: Color(0xFFE5E7EB)),
-                const SizedBox(height: 14),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                  const SizedBox(height: 4),
+                  if (inv.serviceLabels.isNotEmpty)
+                    Row(
                       children: [
+                        Icon(Icons.bolt_rounded, size: 13, color: _grey),
+                        const SizedBox(width: 5),
                         Text(
-                          'Amount Due',
+                          inv.serviceLabels.join(' · '),
                           style: TextStyle(
-                            color: _grey,
-                            fontSize: 11,
+                            color: _charcoal,
+                            fontSize: 12,
                             fontFamily: 'Inter',
-                          ),
-                        ),
-                        const SizedBox(height: 2),
-                        Text(
-                          _formatVnd(inv.total.toInt()),
-                          style: const TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w800,
-                            fontFamily: 'Inter',
-                            color: _black,
                           ),
                         ),
                       ],
                     ),
-                    inv.status == InvoiceStatus.paid
-                        ? Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 10,
+                  const SizedBox(height: 14),
+                  const Divider(height: 1, color: Color(0xFFE5E7EB)),
+                  const SizedBox(height: 14),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Amount Due',
+                            style: TextStyle(
+                              color: _grey,
+                              fontSize: 11,
+                              fontFamily: 'Inter',
                             ),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(25),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _formatVnd(inv.total.toInt()),
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w800,
+                              fontFamily: 'Inter',
+                              color: _black,
                             ),
-                            child: const Row(
-                              children: [
-                                Icon(
-                                  Icons.check_circle_rounded,
-                                  size: 14,
-                                  color: Color(0xFF16A34A),
-                                ),
-                                SizedBox(width: 5),
-                                Text(
-                                  'Paid',
-                                  style: TextStyle(
-                                    color: Color(0xFF16A34A),
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w600,
-                                    fontFamily: 'Inter',
-                                  ),
-                                ),
-                              ],
-                            ),
-                          )
-                        : GestureDetector(
-                            onTap: () => _payNow(inv),
-                            child: Container(
+                          ),
+                        ],
+                      ),
+                      inv.status == InvoiceStatus.paid
+                          ? Container(
                               padding: const EdgeInsets.symmetric(
-                                horizontal: 18,
+                                horizontal: 14,
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: _blue,
+                                color: const Color(0xFFDCFCE7),
                                 borderRadius: BorderRadius.circular(25),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: _blue.withOpacity(0.35),
-                                    blurRadius: 8,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
                               ),
                               child: const Row(
                                 children: [
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    size: 14,
+                                    color: Color(0xFF16A34A),
+                                  ),
+                                  SizedBox(width: 5),
                                   Text(
-                                    'Pay Now',
+                                    'Paid',
                                     style: TextStyle(
-                                      color: _white,
+                                      color: Color(0xFF16A34A),
                                       fontSize: 13,
                                       fontWeight: FontWeight.w600,
                                       fontFamily: 'Inter',
                                     ),
                                   ),
-                                  SizedBox(width: 5),
-                                  Icon(
-                                    Icons.arrow_forward_rounded,
-                                    size: 14,
-                                    color: _white,
-                                  ),
                                 ],
                               ),
+                            )
+                          : GestureDetector(
+                              onTap: () => _payNow(inv),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 18,
+                                  vertical: 10,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: _blue,
+                                  borderRadius: BorderRadius.circular(25),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: _blue.withOpacity(0.35),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Text(
+                                      'Pay Now',
+                                      style: TextStyle(
+                                        color: _white,
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.w600,
+                                        fontFamily: 'Inter',
+                                      ),
+                                    ),
+                                    SizedBox(width: 5),
+                                    Icon(
+                                      Icons.arrow_forward_rounded,
+                                      size: 14,
+                                      color: _white,
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                          ),
-                  ],
-                ),
-              ],
+                    ],
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        ),
+      ), // end inner Container
+    ); // end GestureDetector
   }
 
   Widget _buildEmpty() {

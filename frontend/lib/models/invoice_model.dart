@@ -1,3 +1,5 @@
+// lib/models/invoice_model.dart
+
 class InvoiceSummary {
   final int unpaidCount;
   final int paidCount;
@@ -33,6 +35,12 @@ class Invoice {
   final InvoiceStatus status;
   final int daysUntilDue;
   final List<String> serviceLabels;
+  final List<InvoiceItem> items;
+  // Apartment detail
+  final int? apartmentFloor;
+  final double? apartmentArea;
+  final String? blockCode;
+  final String? residentName;
 
   Invoice({
     required this.id,
@@ -48,6 +56,11 @@ class Invoice {
     required this.status,
     required this.daysUntilDue,
     required this.serviceLabels,
+    this.items = const [],
+    this.apartmentFloor,
+    this.apartmentArea,
+    this.blockCode,
+    this.residentName,
   });
 
   factory Invoice.fromJson(Map<String, dynamic> json) => Invoice(
@@ -68,6 +81,15 @@ class Invoice {
     status: InvoiceStatus.fromString(json['status']),
     daysUntilDue: json['daysUntilDue'] ?? 0,
     serviceLabels: List<String>.from(json['serviceLabels'] ?? []),
+    items: (json['items'] as List? ?? [])
+        .map((e) => InvoiceItem.fromJson(e))
+        .toList(),
+    apartmentFloor: json['apartmentFloor'],
+    apartmentArea: json['apartmentArea'] != null
+        ? (json['apartmentArea'] as num).toDouble()
+        : null,
+    blockCode: json['blockCode'],
+    residentName: json['residentName'],
   );
 
   String get monthLabel {
@@ -135,6 +157,33 @@ enum InvoiceStatus {
     InvoiceStatus.cancelled => 'Cancelled',
     InvoiceStatus.unpaid => 'Unpaid',
   };
+}
+
+class InvoiceItem {
+  final int? serviceId;
+  final String serviceName;
+  final String? unit;
+  final double quantity;
+  final double unitPrice;
+  final double amount;
+
+  InvoiceItem({
+    this.serviceId,
+    required this.serviceName,
+    this.unit,
+    required this.quantity,
+    required this.unitPrice,
+    required this.amount,
+  });
+
+  factory InvoiceItem.fromJson(Map<String, dynamic> json) => InvoiceItem(
+    serviceId: json['serviceId'],
+    serviceName: json['serviceName'] ?? '',
+    unit: json['unit'],
+    quantity: (json['quantity'] ?? 0).toDouble(),
+    unitPrice: (json['unitPrice'] ?? 0).toDouble(),
+    amount: (json['amount'] ?? 0).toDouble(),
+  );
 }
 
 /// Wrapper for paginated list response from Spring Boot
