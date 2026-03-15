@@ -58,6 +58,50 @@ public class InvoiceDTO {
         private BigDecimal quantity; // null/0 for FIXED services
     }
 
+    // Manager invoice list item — mỗi dòng là 1 apartment với debt summary
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class ManagerListItem {
+        private Long apartmentId;
+        private String apartmentCode;
+        private String blockCode;
+        private Integer floor;
+        private String residentName;
+        private String residentEmail;
+        private java.math.BigDecimal totalDebt;   // tổng UNPAID+OVERDUE
+        private long unpaidCount;
+        private long overdueCount;
+        private int monthsOverdue;                // tháng overdue lâu nhất
+        private String status;                    // "paid" | "unpaid" | "overdue"
+        private String initials;                  // 2 chữ cái đầu tên
+    }
+
+    // Manager detail: thông tin apartment + danh sách invoices
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class ManagerDetail {
+        private Long apartmentId;
+        private String apartmentCode;
+        private String blockCode;
+        private Integer floor;
+        private Double area;
+        private String residentName;
+        private String residentEmail;
+        private String residentPhone;
+        private String contractStart;
+        private String contractEnd;
+        private java.math.BigDecimal totalOutstanding;
+        private List<Response> outstandingInvoices;
+        private List<Response> paidInvoices;
+    }
+
+    // Manager global summary
+    @Data @Builder @NoArgsConstructor @AllArgsConstructor
+    public static class ManagerSummary {
+        private long totalApartments;
+        private long overdueCount;
+        private long unpaidCount;
+        private java.math.BigDecimal totalOutstanding;
+    }
+
     @Data @NoArgsConstructor @AllArgsConstructor
     public static class StatusUpdate {
         private InvoiceStatus status;

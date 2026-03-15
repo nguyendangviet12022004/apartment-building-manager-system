@@ -135,6 +135,121 @@ public class InvoiceService {
         invoiceRepository.deleteById(id);
     }
 
+    // ── Manager: list apartments with debt summary ───────────────────────────
+    public org.springframework.data.domain.Page<InvoiceDTO.ManagerListItem> managerList(
+            String statusFilter, String search, Pageable pageable) {
+
+        boolean hasDebt  = "hasdebt".equalsIgnoreCase(statusFilter);
+        boolean onlyOver = "overdue".equalsIgnoreCase(statusFilter);
+        boolean onlyUnpaid = "unpaid".equalsIgnoreCase(statusFilter);
+        boolean onlyPaid = "paid".equalsIgnoreCase(statusFilter);
+
+        // Query DISTINCT apartments (không bị duplicate)
+        org.springframework.data.domain.Page<com.viet.backend.model.Apartment> aptPage =
+                invoiceRepository.findApartmentsWithInvoices(
+                        (search == null || search.isBlank()) ? null : search,
+                        pageable);
+
+        return aptPage.map(apt -> {
+            long unpaid  = invoiceRepository.countByApartmentIdAndStatus(apt.getId(), InvoiceStatus.UNPAID);
+            long overdue = invoiceRepository.countByApartmentIdAndStatus(apt.getId(), InvoiceStatus.OVERDUE);
+            BigDecimal debt = invoiceRepository.sumOutstanding(apt.getId());
+            if (debt == null) debt = BigDecimal.ZERO;
+
+            // Áp dụng filter sau khi tính toán
+            if (hasDebt   && debt.compareTo(BigDecimal.ZERO) == 0) return null;
+            if (onlyOver  && overdue == 0)  return null;
+            if (onlyUnpaid&& unpaid  == 0)  return null;
+            if (onlyPaid  && (unpaid > 0 || overdue > 0)) return null;
+
+            int maxMonths = invoiceRepository.findAllByApartmentId(apt.getId()).stream()
+                    .filter(i -> i.getStatus() == InvoiceStatus.OVERDUE && i.getDueDate() != null)
+                    .mapToInt(i -> (int) java.time.temporal.ChronoUnit.MONTHS.between(
+                            i.getDueDate(), LocalDateTime.now()))
+                    .max().orElse(0);
+
+            String invStatus = overdue > 0 ? "overdue" : unpaid > 0 ? "unpaid" : "paid";
+
+            String name = "", email = "";
+            if (apt.getResident() != null && apt.getResident().getUser() != null) {
+                var u = apt.getResident().getUser();
+                name  = u.getFirstname() + " " + u.getLastname();
+                email = u.getEmail() != null ? u.getEmail() : "";
+            }
+            String initials = name.length() >= 2
+                    ? (name.substring(0, 1) + name.substring(name.lastIndexOf(' ') + 1, name.lastIndexOf(' ') + 2)).toUpperCase()
+                    : name.length() > 0 ? name.substring(0, 1).toUpperCase() : "?";
+
+            return InvoiceDTO.ManagerListItem.builder()
+                    .apartmentId(apt.getId())
+                    .apartmentCode(apt.getApartmentCode())
+                    .blockCode(apt.getBlock() != null ? apt.getBlock().getBlockCode() : null)
+                    .floor(apt.getFloor())
+                    .residentName(name)
+                    .residentEmail(email)
+                    .totalDebt(debt)
+                    .unpaidCount(unpaid)
+                    .overdueCount(overdue)
+                    .monthsOverdue(maxMonths)
+                    .status(invStatus)
+                    .initials(initials)
+                    .build();
+        });
+    }
+
+    // ── Manager: detail 1 apartment ──────────────────────────────────────────
+    public InvoiceDTO.ManagerDetail managerDetail(Long apartmentId) {
+        var apt = apartmentRepository.findById(apartmentId)
+                .orElseThrow(() -> new RuntimeException("Apartment not found: " + apartmentId));
+
+        List<Invoice> all = invoiceRepository.findAllByApartmentId(apartmentId);
+        List<InvoiceDTO.Response> outstanding = all.stream()
+                .filter(i -> i.getStatus() == InvoiceStatus.UNPAID
+                        || i.getStatus() == InvoiceStatus.OVERDUE)
+                .map(this::toResponse).collect(Collectors.toList());
+        List<InvoiceDTO.Response> paid = all.stream()
+                .filter(i -> i.getStatus() == InvoiceStatus.PAID)
+                .map(this::toResponse).collect(Collectors.toList());
+
+        BigDecimal debt = invoiceRepository.sumOutstanding(apartmentId);
+
+        String name = "", email = "", phone = "";
+        if (apt.getResident() != null && apt.getResident().getUser() != null) {
+            var u = apt.getResident().getUser();
+            name  = u.getFirstname() + " " + u.getLastname();
+            email = u.getEmail() != null ? u.getEmail() : "";
+            // phone field nếu có trong User entity
+        }
+
+        return InvoiceDTO.ManagerDetail.builder()
+                .apartmentId(apt.getId())
+                .apartmentCode(apt.getApartmentCode())
+                .blockCode(apt.getBlock() != null ? apt.getBlock().getBlockCode() : null)
+                .floor(apt.getFloor())
+                .area(apt.getArea())
+                .residentName(name)
+                .residentEmail(email)
+                .residentPhone(phone)
+                .totalOutstanding(debt != null ? debt : BigDecimal.ZERO)
+                .outstandingInvoices(outstanding)
+                .paidInvoices(paid)
+                .build();
+    }
+
+    // ── Manager: global summary ───────────────────────────────────────────────
+    public InvoiceDTO.ManagerSummary managerSummary() {
+        long overdue = invoiceRepository.countByStatus(InvoiceStatus.OVERDUE);
+        long unpaid  = invoiceRepository.countByStatus(InvoiceStatus.UNPAID);
+        long total   = apartmentRepository.count();
+        BigDecimal outstanding = invoiceRepository.sumAllOutstanding();
+        return InvoiceDTO.ManagerSummary.builder()
+                .totalApartments(total)
+                .overdueCount(overdue)
+                .unpaidCount(unpaid)
+                .totalOutstanding(outstanding != null ? outstanding : BigDecimal.ZERO)
+                .build();
+    }
+
     @Scheduled(cron = "0 0 1 * * *")
     @Transactional
     public void markOverdue() {

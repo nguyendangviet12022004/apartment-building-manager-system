@@ -75,12 +75,12 @@ public class InvoiceController {
     // ────────────────────────────────────────────────────
     // PUT /api/v1/invoices/{id}
     // ────────────────────────────────────────────────────
-    // @PutMapping("/{id}")
-    // public ResponseEntity<InvoiceDTO.Response> update(
-    //         @PathVariable Long id,
-    //         @RequestBody InvoiceDTO.Request req) {
-    //     return ResponseEntity.ok(invoiceService.update(id, req));
-    // }
+//    @PutMapping("/{id}")
+//    public ResponseEntity<InvoiceDTO.Response> update(
+//            @PathVariable Long id,
+//            @RequestBody InvoiceDTO.Request req) {
+//        return ResponseEntity.ok(invoiceService.update(id, req));
+//    }
 
     // ────────────────────────────────────────────────────
     // PATCH /api/v1/invoices/{id}/status
@@ -92,6 +92,31 @@ public class InvoiceController {
             @PathVariable Long id,
             @RequestBody InvoiceDTO.StatusUpdate req) {
         return ResponseEntity.ok(invoiceService.updateStatus(id, req));
+    }
+
+    // ── Manager endpoints ────────────────────────────────
+    // GET /api/v1/invoices/manager?status=overdue&search=A501&page=0&size=20
+    @GetMapping("/manager")
+    public ResponseEntity<org.springframework.data.domain.Page<InvoiceDTO.ManagerListItem>> managerList(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String search,
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        return ResponseEntity.ok(invoiceService.managerList(status, search, pageable));
+    }
+
+    // GET /api/v1/invoices/manager/summary
+    @GetMapping("/manager/summary")
+    public ResponseEntity<InvoiceDTO.ManagerSummary> managerSummary() {
+        return ResponseEntity.ok(invoiceService.managerSummary());
+    }
+
+    // GET /api/v1/invoices/manager/apartment/{apartmentId}
+    @GetMapping("/manager/apartment/{apartmentId}")
+    public ResponseEntity<InvoiceDTO.ManagerDetail> managerDetail(
+            @PathVariable Long apartmentId) {
+        return ResponseEntity.ok(invoiceService.managerDetail(apartmentId));
     }
 
     // ────────────────────────────────────────────────────

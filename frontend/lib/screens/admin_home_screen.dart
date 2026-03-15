@@ -1,3 +1,5 @@
+// lib/screens/admin_home_screen.dart
+
 import 'package:flutter/material.dart';
 import '../widgets/notification_bell.dart';
 import '../widgets/app_drawer.dart';
@@ -253,8 +255,9 @@ class Body extends StatelessWidget {
   }
 
   // ── Quick Actions ────────────────────────────────────────
+  // 👇 Invoice route thay đổi từ AppRoutes.createInvoice → AppRoutes.invoiceList
   static const _row1 = [
-    (Icons.receipt_long, 'Invoice', AppRoutes.createInvoice),
+    (Icons.receipt_long, 'Invoice', AppRoutes.invoiceList), // ← updated
     (Icons.spa_outlined, 'Amenity', null),
     (Icons.newspaper, 'News', null),
     (Icons.bar_chart, 'Report', null),
@@ -316,7 +319,6 @@ class Body extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            debugPrint('>>> tap: $label / $route');
             if (route == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -356,26 +358,6 @@ class Body extends StatelessWidget {
         ),
       ),
     );
-  }
-
-  void _onActionTap(BuildContext context, String? route, String label) {
-    debugPrint('>>> _onActionTap: label=$label, route=$route');
-    debugPrint('>>> Navigator: ${Navigator.of(context)}');
-
-    if (route == null) {
-      debugPrint('>>> route is null → showSnackBar');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('$label — Coming soon'),
-          behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 1),
-        ),
-      );
-      return;
-    }
-
-    debugPrint('>>> pushNamed: $route');
-    Navigator.of(context, rootNavigator: true).pushNamed(route);
   }
 
   // ── Notifications ────────────────────────────────────────
