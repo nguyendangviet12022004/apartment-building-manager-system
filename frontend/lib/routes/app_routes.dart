@@ -10,6 +10,9 @@ import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/apartment_verify_screen.dart';
 import '../screens/admin_request_screen.dart';
+import '../screens/bills_page.dart';
+import '../screens/create_invoice_page.dart';
+import '../screens/invoice_list_management_screen.dart';
 import '../screens/request_detail_response_screen.dart';
 import '../models/request_model.dart';
 
@@ -25,6 +28,9 @@ class AppRoutes {
   static const String changePassword = '/change-password';
   static const String verifyApartment = '/verify-apartment';
   static const String notifications = '/notifications';
+  static const String bills = '/bills';
+  static const String createInvoice = '/create-invoice';
+  static const String invoiceList = '/invoice-list';
   static const String requestDetailResponse = '/admin/request-response';
 
   static Map<String, WidgetBuilder> get routes => {
@@ -39,6 +45,9 @@ class AppRoutes {
     changePassword: (context) => const ChangePasswordScreen(),
     verifyApartment: (context) => const ApartmentVerifyScreen(),
     notifications: (context) => const NotificationsScreen(),
+    createInvoice: (context) => const CreateInvoicePage(),
+    invoiceList: (_) => const InvoiceListManagementScreen(),
+    // bills: (context) => const BillsPage(),
     requestDetailResponse: (context) {
       final request =
           ModalRoute.of(context)!.settings.arguments as RequestModel;

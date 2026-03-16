@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/api_auth_service.dart';
@@ -37,14 +38,17 @@ class AuthProvider with ChangeNotifier {
     _email = prefs.getString('email');
     _role = prefs.getString('role');
     _userId = prefs.getInt('userId');
+    _apartmentId = prefs.getInt('apartmentId');
     _isAuthenticated = _accessToken != null;
 
-    // If already authenticated, initialize notifications
+    // Nếu đã login nhưng chưa có apartmentId → gọi API lấy lại
+    if (_isAuthenticated && _apartmentId == null && _accessToken != null) {
+      await _fetchAndSaveApartmentId(_accessToken!);
+    }
+
     if (_isAuthenticated && _email != null) {
       _notificationService.initialize().then((token) {
-        if (token != null) {
-          _authService.updateFcmToken(_email!, token);
-        }
+        if (token != null) _authService.updateFcmToken(_email!, token);
       });
     }
 
@@ -55,10 +59,16 @@ class AuthProvider with ChangeNotifier {
     _setLoading(true);
     try {
       final response = await _authService.login(email, password);
-      final accessToken = response['accessToken'];
-      final refreshToken = response['refreshToken'];
-      final role = response['role'];
-      final userId = response['userId'];
+      debugPrint('LOGIN RESPONSE: $response');
+
+      final accessToken = response['accessToken'] as String;
+      final refreshToken = response['refreshToken'] as String;
+      final role = response['role'] as String;
+      final userId = response['userId'] as int;
+
+      // Decode JWT để lấy apartment_id (backend encode trong token)
+      int? apartmentId = response['apartmentId'] as int?;
+      apartmentId ??= _decodeApartmentIdFromJwt(accessToken);
 
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString('accessToken', accessToken);
@@ -74,17 +84,40 @@ class AuthProvider with ChangeNotifier {
       _userId = userId;
       _isAuthenticated = true;
 
-      // Initialize notifications after successful login and send to backend
+      // Nếu login response không có apartmentId → gọi API riêng
+      if (apartmentId == null) {
+        apartmentId = await _fetchAndSaveApartmentId(accessToken);
+      } else {
+        await prefs.setInt('apartmentId', apartmentId);
+        _apartmentId = apartmentId;
+      }
+
       _notificationService.initialize().then((token) {
-        if (token != null) {
-          _authService.updateFcmToken(email, token);
-        }
+        if (token != null) _authService.updateFcmToken(email, token);
       });
 
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
       rethrow;
+    }
+  }
+
+  /// Gọi GET /api/v1/users/me/apartment, lưu vào prefs & state
+  Future<int?> _fetchAndSaveApartmentId(String accessToken) async {
+    try {
+      if (userId == null) return null;
+      final id = await _authService.fetchApartmentId(userId!);
+      if (id != null) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setInt('apartmentId', id);
+        _apartmentId = id;
+        notifyListeners();
+      }
+      return id;
+    } catch (e) {
+      debugPrint('fetchApartmentId error: $e');
+      return null;
     }
   }
 
@@ -107,8 +140,6 @@ class AuthProvider with ChangeNotifier {
         identityCard: identityCard,
         emergencyContact: emergencyContact,
       );
-
-      // We don't log in automatically here because user wants to go to login screen
       _setLoading(false);
     } catch (e) {
       _setLoading(false);
@@ -118,27 +149,24 @@ class AuthProvider with ChangeNotifier {
 
   Future<void> logout() async {
     final prefs = await SharedPreferences.getInstance();
-
-    // Remove FCM token on backend before local logout if email is known
-    if (_email != null) {
-      _authService.removeFcmToken(_email!);
-    }
+    if (_email != null) _authService.removeFcmToken(_email!);
 
     await prefs.remove('accessToken');
     await prefs.remove('refreshToken');
     await prefs.remove('email');
     await prefs.remove('role');
     await prefs.remove('userId');
+    await prefs.remove('apartmentId');
+
     _accessToken = null;
     _refreshToken = null;
     _email = null;
     _role = null;
     _userId = null;
+    _apartmentId = null;
     _isAuthenticated = false;
 
-    // Delete FCM token locally
     await _notificationService.deleteToken();
-
     notifyListeners();
   }
 
@@ -197,12 +225,36 @@ class AuthProvider with ChangeNotifier {
       final id = await _authService.verifyApartmentCode(code);
       _apartmentId = id;
       _isApartmentVerified = true;
+
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('apartmentId', id);
+
       _setLoading(false);
       notifyListeners();
     } catch (e) {
       _isApartmentVerified = false;
       _setLoading(false);
       rethrow;
+    }
+  }
+
+  /// Decode JWT payload (không verify signature) để lấy apartment_id
+  int? _decodeApartmentIdFromJwt(String token) {
+    try {
+      final parts = token.split('.');
+      if (parts.length != 3) return null;
+      // Base64url → Base64 chuẩn
+      String payload = parts[1];
+      payload = payload.replaceAll('-', '+').replaceAll('_', '/');
+      // Padding
+      while (payload.length % 4 != 0) payload += '=';
+      final decoded = utf8.decode(base64Decode(payload));
+      final map = jsonDecode(decoded) as Map<String, dynamic>;
+      // JWT encode là apartment_id (snake_case)
+      return map['apartment_id'] as int?;
+    } catch (e) {
+      debugPrint('JWT decode error: $e');
+      return null;
     }
   }
 

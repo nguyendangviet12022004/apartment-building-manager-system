@@ -43,4 +43,29 @@
             <data android:mimeType="text/plain" />
         </intent>
     </queries>
+    <!-- Thêm vào trong thẻ <manifest> (ngang hàng với <application>)
+     để url_launcher có thể canLaunchUrl() với các app ngân hàng -->
+
+<queries>
+    <!-- Cho phép mở bất kỳ http/https URL -->
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="https" />
+    </intent>
+    <intent>
+        <action android:name="android.intent.action.VIEW" />
+        <data android:scheme="http" />
+    </intent>
+
+    <!-- Các app ngân hàng phổ biến tại VN -->
+    <package android:name="com.vnpay.vietnammobilebank" />  <!-- VNPay -->
+    <package android:name="com.VCB" />                      <!-- Vietcombank -->
+    <package android:name="com.mb.MBBank" />                <!-- MBBank -->
+    <package android:name="com.tpb.mb.gprs" />              <!-- TPBank -->
+    <package android:name="vn.com.acbmobile" />             <!-- ACB -->
+    <package android:name="com.bids.bidv" />                <!-- BIDV -->
+    <package android:name="vn.com.vib" />                   <!-- VIB -->
+    <package android:name="com.hdbank.mbanking" />          <!-- HDBank -->
+    <package android:name="vn.com.ocbcorporate.ocbomni" />  <!-- OCB -->
+</queries>
 </manifest>

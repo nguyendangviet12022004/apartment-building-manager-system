@@ -2,6 +2,7 @@ package com.viet.backend.service;
 
 import com.viet.backend.dto.ApartmentRequest;
 import com.viet.backend.dto.ApartmentResponse;
+import com.viet.backend.dto.ApartmentDTO;
 import com.viet.backend.model.Apartment;
 import com.viet.backend.model.Block;
 import com.viet.backend.repository.ApartmentRepository;
@@ -9,6 +10,10 @@ import com.viet.backend.repository.BlockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -39,6 +44,12 @@ public class ApartmentService {
                 .build();
 
         return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
+    }
+
+    public Optional<Long> findApartmentIdByUserId(Integer userId) {
+        return apartmentRepository
+                .findByResidentUserId(userId)
+                .map(Apartment::getId);
     }
 
     private void validateApartmentCode(String code, Block block, Integer floor) {
@@ -78,5 +89,60 @@ public class ApartmentService {
             expected = expected.substring(expected.length() - 3);
 
         return checksum.equals(expected);
+    }
+
+    // Lấy tất cả apartments (dùng cho manager dropdown khi tạo invoice)
+    public List<ApartmentDTO> getAll() {
+        return apartmentRepository.findAllWithDetails(null)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    // Lấy theo trạng thái used (true = đang có người ở)
+    public List<ApartmentDTO> getByUsed(boolean used) {
+        return apartmentRepository.findAllWithDetails(used)
+                .stream()
+                .map(this::toDTO)
+                .collect(Collectors.toList());
+    }
+
+    public ApartmentDTO getById(Long id) {
+        return apartmentRepository.findById(id)
+                .map(this::toDTO)
+                .orElseThrow(() -> new RuntimeException("Apartment not found: " + id));
+    }
+
+    // Lấy apartment theo userId (cho resident xem apartment của mình)
+    public ApartmentDTO getByUserId(Integer userId) {
+        return apartmentRepository.findByResidentUserId(userId)
+                .map(this::toDTO)
+                .orElseThrow(() -> new RuntimeException("No apartment for userId: " + userId));
+    }
+
+    private ApartmentDTO toDTO(Apartment a) {
+        ApartmentDTO.ApartmentDTOBuilder builder = ApartmentDTO.builder()
+                .id(a.getId())
+                .apartmentCode(a.getApartmentCode())
+                .floor(a.getFloor())
+                .area(a.getArea())
+                .status(a.getStatus())
+                .used(a.isUsed());
+
+        if (a.getBlock() != null) {
+            builder.blockId(a.getBlock().getId())
+                    .blockCode(a.getBlock().getBlockCode());
+        }
+
+        if (a.getResident() != null) {
+            builder.residentId(a.getResident().getId());
+            if (a.getResident().getUser() != null) {
+                var user = a.getResident().getUser();
+                builder.residentName(user.getFirstname() + " " + user.getLastname())
+                        .residentEmail(user.getEmail());
+            }
+        }
+
+        return builder.build();
     }
 }
