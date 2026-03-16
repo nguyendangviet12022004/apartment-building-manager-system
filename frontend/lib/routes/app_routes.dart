@@ -13,6 +13,8 @@ import '../screens/admin_request_screen.dart';
 import '../screens/bills_page.dart';
 import '../screens/create_invoice_page.dart';
 import '../screens/invoice_list_management_screen.dart';
+import '../screens/request_detail_response_screen.dart';
+import '../models/request_model.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -29,6 +31,7 @@ class AppRoutes {
   static const String bills = '/bills';
   static const String createInvoice = '/create-invoice';
   static const String invoiceList = '/invoice-list';
+  static const String requestDetailResponse = '/admin/request-response';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -45,5 +48,10 @@ class AppRoutes {
     createInvoice: (context) => const CreateInvoicePage(),
     invoiceList: (_) => const InvoiceListManagementScreen(),
     // bills: (context) => const BillsPage(),
+    requestDetailResponse: (context) {
+      final request =
+          ModalRoute.of(context)!.settings.arguments as RequestModel;
+      return RequestDetailResponseScreen(request: request);
+    },
   };
 }

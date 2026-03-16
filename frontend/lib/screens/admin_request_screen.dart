@@ -3,6 +3,7 @@ import 'package:provider/provider.dart';
 import '../models/request_model.dart';
 import '../providers/auth_provider.dart';
 import '../providers/request_provider.dart';
+import '../routes/app_routes.dart';
 
 class AdminRequestScreen extends StatefulWidget {
   const AdminRequestScreen({super.key});
@@ -40,6 +41,42 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
         authProvider.accessToken!,
         refresh: refresh,
       );
+    }
+  }
+
+  Future<void> _selectTimeline(RequestModel request) async {
+    final DateTime initialDate =
+        request.solvedBy ?? DateTime.now().add(const Duration(days: 1));
+    final DateTime firstDate = request.createdAt;
+
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: initialDate.isBefore(firstDate) ? firstDate : initialDate,
+      firstDate: firstDate,
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      helpText: 'Set timeline to solve issue',
+    );
+
+    if (picked != null && mounted) {
+      try {
+        final authProvider = Provider.of<AuthProvider>(context, listen: false);
+        await context.read<RequestProvider>().setRequestTimeline(
+          authProvider.accessToken!,
+          request.id,
+          picked,
+        );
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Timeline updated successfully')),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text('Error: $e')));
+        }
+      }
     }
   }
 
@@ -112,10 +149,7 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
       case RequestStatus.PENDING:
         statusColor = Colors.orange;
         break;
-      case RequestStatus.IN_PROGRESS:
-        statusColor = Colors.blue;
-        break;
-      case RequestStatus.RESOLVED:
+      case RequestStatus.APPROVED:
         statusColor = Colors.green;
         break;
       case RequestStatus.REJECTED:
@@ -137,20 +171,40 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
           children: [
             Text('From: ${request.userFullName}'),
             const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-              decoration: BoxDecoration(
-                color: statusColor.withAlpha(50),
-                borderRadius: BorderRadius.circular(4),
-              ),
-              child: Text(
-                request.status.name,
-                style: TextStyle(
-                  color: statusColor,
-                  fontSize: 12,
-                  fontWeight: FontWeight.bold,
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 2,
+                  ),
+                  decoration: BoxDecoration(
+                    color: statusColor.withAlpha(50),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    request.status.name,
+                    style: TextStyle(
+                      color: statusColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                 ),
-              ),
+                if (request.solvedBy != null) ...[
+                  const SizedBox(width: 8),
+                  Icon(Icons.timer, size: 14, color: Colors.blue[700]),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Due: ${request.solvedBy.toString().substring(0, 10)}',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.blue[700],
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ],
         ),
@@ -170,9 +224,12 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 if (request.media.isNotEmpty) _buildMediaGallery(request.media),
                 if (request.response != null) ...[
                   const Divider(),
-                  const Text(
-                    'Response:',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                  Text(
+                    'Admin Response (${request.adminName ?? "Admin"}):',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.blueAccent,
+                    ),
                   ),
                   Text(request.response!),
                   Text(
@@ -182,13 +239,35 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
                 ],
                 const SizedBox(height: 16),
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    if (request.status != RequestStatus.RESOLVED &&
-                        request.status != RequestStatus.REJECTED)
-                      ElevatedButton(
-                        onPressed: () => _showUpdateStatusDialog(request),
-                        child: const Text('Update Status'),
+                    if (request.status == RequestStatus.PENDING)
+                      TextButton.icon(
+                        icon: const Icon(Icons.calendar_today, size: 18),
+                        label: Text(
+                          request.solvedBy == null
+                              ? 'Set Timeline'
+                              : 'Update Timeline',
+                        ),
+                        onPressed: () => _selectTimeline(request),
+                      )
+                    else
+                      const SizedBox.shrink(),
+                    if (request.status == RequestStatus.PENDING)
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.reply),
+                        label: const Text('Response'),
+                        onPressed: () {
+                          Navigator.pushNamed(
+                            context,
+                            AppRoutes.requestDetailResponse,
+                            arguments: request,
+                          );
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.blueAccent,
+                          foregroundColor: Colors.white,
+                        ),
                       ),
                   ],
                 ),
@@ -196,65 +275,6 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showUpdateStatusDialog(RequestModel request) {
-    final TextEditingController responseController = TextEditingController(
-      text: request.response,
-    );
-    RequestStatus selectedStatus = request.status;
-
-    showDialog(
-      context: context,
-      builder: (context) => StatefulBuilder(
-        builder: (context, setState) => AlertDialog(
-          title: const Text('Update Request'),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButton<RequestStatus>(
-                value: selectedStatus,
-                isExpanded: true,
-                onChanged: (val) => setState(() => selectedStatus = val!),
-                items: RequestStatus.values
-                    .map((s) => DropdownMenuItem(value: s, child: Text(s.name)))
-                    .toList(),
-              ),
-              TextField(
-                controller: responseController,
-                maxLines: 3,
-                decoration: const InputDecoration(
-                  labelText: 'Admin Response',
-                  hintText: 'Enter your response here...',
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            ElevatedButton(
-              onPressed: () async {
-                final authProvider = Provider.of<AuthProvider>(
-                  context,
-                  listen: false,
-                );
-                await context.read<RequestProvider>().updateRequestStatus(
-                  authProvider.accessToken!,
-                  request.id,
-                  selectedStatus,
-                  responseController.text,
-                );
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        ),
       ),
     );
   }

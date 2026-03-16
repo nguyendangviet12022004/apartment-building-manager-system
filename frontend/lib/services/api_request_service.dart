@@ -113,4 +113,27 @@ class ApiRequestService {
       );
     }
   }
+
+  Future<RequestModel> updateTimeline({
+    required String token,
+    required int requestId,
+    required DateTime solvedBy,
+  }) async {
+    // Backend expects LocalDateTime in a format it can parse. ISO-8601 is usually fine.
+    final response = await http.patch(
+      Uri.parse(
+        '$_baseUrl/$requestId/timeline?solvedBy=${solvedBy.toIso8601String()}',
+      ),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return RequestModel.fromJson(jsonDecode(response.body));
+    } else {
+      throw Exception('Failed to update timeline: ${response.statusCode}');
+    }
+  }
 }
