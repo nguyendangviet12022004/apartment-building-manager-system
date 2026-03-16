@@ -11,13 +11,9 @@ class ResidentHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(),
-      home: const Scaffold(
-        backgroundColor: Color(0xFFF5F5F5),
-        body: SafeArea(child: Body()),
-      ),
+    return const Scaffold(
+      backgroundColor: Color(0xFFF5F5F5),
+      body: SafeArea(child: Body()),
     );
   }
 }
@@ -62,7 +58,7 @@ class Body extends StatelessWidget {
             ),
           ),
         ),
-        _buildBottomNav(),
+        _buildBottomNav(context),
       ],
     );
   }
@@ -92,7 +88,7 @@ class Body extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundImage: const NetworkImage(
-                  'https://placehold.co/48x48',
+                  'https://via.placeholder.com/48.png', 
                 ),
                 backgroundColor: Colors.white24,
               ),
@@ -123,27 +119,9 @@ class Body extends StatelessWidget {
               ),
               const Icon(Icons.qr_code_2, color: Colors.white, size: 28),
               const SizedBox(width: 12),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(
-                    Icons.notifications,
-                    color: Colors.white,
-                    size: 28,
-                  ),
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: _orange,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
+              const NotificationBell(
+                iconColor: Colors.white,
+                iconSize: 28,
               ),
             ],
           ),
@@ -377,7 +355,7 @@ class Body extends StatelessWidget {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
-          image: NetworkImage('https://placehold.co/327x128'),
+          image: NetworkImage('https://via.placeholder.com/327x128.png'),
           fit: BoxFit.cover,
         ),
         boxShadow: [
@@ -501,7 +479,7 @@ class Body extends StatelessWidget {
         color: Colors.grey[700],
         borderRadius: BorderRadius.circular(16),
         image: const DecorationImage(
-          image: NetworkImage('https://placehold.co/256x128'),
+          image: NetworkImage('https://via.placeholder.com/256x128.png'),
           fit: BoxFit.cover,
           colorFilter: ColorFilter.mode(Colors.black26, BlendMode.darken),
         ),
@@ -559,7 +537,7 @@ class Body extends StatelessWidget {
     (Icons.person_outline, 'Profile', false),
   ];
 
-  Widget _buildBottomNav() {
+  Widget _buildBottomNav(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -580,21 +558,66 @@ class Body extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: _navItems.map((item) {
               final color = item.$3 ? _blue : _grey;
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(item.$1, color: color, size: 26),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.$2,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: item.$3 ? FontWeight.w600 : FontWeight.w400,
-                      fontFamily: 'Inter',
+              return GestureDetector(
+                onTap: () {
+                  if (item.$2 == 'Home') {
+                    // Already on Home
+                  } else if (item.$2 == 'Services') {
+                    _onActionTap(context, null, item.$2);
+                  } else if (item.$2 == 'Invoices') {
+                    _onActionTap(context, AppRoutes.bills, item.$2);
+                  } else if (item.$2 == 'Profile') {
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(Icons.person, color: Colors.blueAccent),
+                              title: const Text('Change Password'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(context, AppRoutes.changePassword);
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(Icons.logout, color: Colors.redAccent),
+                              title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                await context.read<AuthProvider>().logout();
+                                if (context.mounted) {
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    AppRoutes.login,
+                                    (route) => false,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  }
+                },
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(item.$1, color: color, size: 26),
+                    const SizedBox(height: 4),
+                    Text(
+                      item.$2,
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 12,
+                        fontWeight: item.$3 ? FontWeight.w600 : FontWeight.w400,
+                        fontFamily: 'Inter',
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               );
             }).toList(),
           ),
