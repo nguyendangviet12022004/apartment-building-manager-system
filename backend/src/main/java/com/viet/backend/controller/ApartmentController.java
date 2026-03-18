@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/apartments")
@@ -20,6 +21,7 @@ public class ApartmentController {
     private final ApartmentService apartmentService;
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<ApartmentResponse> createApartment(@Valid @RequestBody ApartmentRequest request) {
         return ResponseEntity.ok(apartmentService.createApartment(request));
     }

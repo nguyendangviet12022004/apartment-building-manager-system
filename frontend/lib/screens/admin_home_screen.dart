@@ -13,13 +13,9 @@ class AdminHomeScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData.light(),
-      home: const Scaffold(
-        backgroundColor: Color(0xFFF5F5F5),
-        body: SafeArea(child: Body()),
-      ),
+    return const Scaffold(
+      backgroundColor: Color(0xFFF5F5F5),
+      body: SafeArea(child: Body()),
     );
   }
 }
@@ -40,18 +36,22 @@ class Body extends StatelessWidget {
     return Column(
       children: [
         Stack(
-          clipBehavior: Clip.none,
           children: [
-            _buildHeader(),
+            Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _buildHeader(),
+                const SizedBox(height: overlapAmount),
+              ],
+            ),
             Positioned(
-              bottom: -overlapAmount,
+              bottom: 0,
               left: 0,
               right: 0,
               child: _buildQuickActions(),
             ),
           ],
         ),
-        const SizedBox(height: overlapAmount),
         Expanded(
           child: SingleChildScrollView(
             child: Column(
@@ -265,6 +265,7 @@ class Body extends StatelessWidget {
   ];
 
   static const _row2 = [
+    (Icons.domain_add, 'Add Apartment', AppRoutes.addApartment),
     (Icons.apartment, 'Apartment', null),
     (Icons.directions_car_outlined, 'Vehicle', null),
   ];
@@ -319,6 +320,7 @@ class Body extends StatelessWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
+            print('TAPPED ON: $label with route: $route');
             if (route == null) {
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
