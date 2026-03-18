@@ -73,9 +73,9 @@ public class ApartmentService {
         }
 
         // 3rd segment: Checksum verification
-        if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
-            throw new RuntimeException("Invalid checksum segment. Typos detected.");
-        }
+//        if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
+//            throw new RuntimeException("Invalid checksum segment. Typos detected.");
+//        }
     }
 
     private boolean isValidChecksum(String data, String checksum) {

@@ -261,7 +261,7 @@ class Body extends StatelessWidget {
     (Icons.spa_outlined, 'Amenity', null),
     (Icons.newspaper, 'News', null),
     (Icons.bar_chart, 'Report', null),
-    (Icons.people_outline, 'Resident', null),
+    (Icons.people_outline, 'Resident', AppRoutes.residentManagement),
   ];
 
   static const _row2 = [
