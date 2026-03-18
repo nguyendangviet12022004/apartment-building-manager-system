@@ -52,11 +52,10 @@ class AppRoutes {
     notifications: (context) => const NotificationsScreen(),
     createInvoice: (context) => const CreateInvoicePage(),
     invoiceList: (_) => const InvoiceListManagementScreen(),
-<<<<<<< HEAD
+
     addApartment: (context) => const AddApartmentScreen(),
-=======
     profile: (context) => const ProfileScreen(),
->>>>>>> main
+
     // bills: (context) => const BillsPage(),
     requestDetailResponse: (context) {
       final request =
