@@ -346,6 +346,11 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
         selectedItemColor: primaryMaroon,
         unselectedItemColor: Colors.black54,
         type: BottomNavigationBarType.fixed,
+        onTap: (index) {
+          if (index == 0) {
+            Navigator.popUntil(context, (route) => route.isFirst);
+          }
+        },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
           BottomNavigationBarItem(icon: Icon(Icons.dashboard_customize), label: 'Services'),

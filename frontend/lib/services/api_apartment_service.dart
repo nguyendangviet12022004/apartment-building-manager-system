@@ -46,4 +46,32 @@ class ApiApartmentService {
       throw errorMessage;
     }
   }
+
+  Future<Map<String, dynamic>> getApartments({
+    required String token,
+    String? keyword,
+    String? status,
+    int page = 0,
+    int size = 10,
+  }) async {
+    String url = '$baseUrl?page=$page&size=$size';
+    if (keyword != null && keyword.isNotEmpty) url += '&keyword=$keyword';
+    if (status != null && status != 'All Units') {
+      url += '&status=${status.toUpperCase()}';
+    }
+
+    final response = await http.get(
+      Uri.parse(url),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body); // backend returns Page<ApartmentDTO>
+    } else {
+      throw Exception('Failed to load apartments');
+    }
+  }
 }
