@@ -37,6 +37,18 @@ public class User implements UserDetails {
   private Role role;
 
   private String fcmToken;
+  
+  // Additional profile fields
+  private String phone;
+  private String dateOfBirth;  // Format: yyyy-MM-dd
+  private String gender;       // Male, Female, Other
+  private String avatarUrl;    // Cloudinary URL for profile photo
+  
+  // Preferences
+  private String language;     // English, Vietnamese, Spanish, French
+  private Boolean emailNotifications;
+  private Boolean pushNotifications;
+  private String theme;        // Light, Dark, Auto
 
   @Override
   public Collection<? extends GrantedAuthority> getAuthorities() {
