@@ -20,4 +20,5 @@ public class Resident {
 
     private String identityCard;
     private String emergencyContact;
+    private String emergencyContactRelationship;  // Spouse, Parent, Sibling, Friend, Other
 }
