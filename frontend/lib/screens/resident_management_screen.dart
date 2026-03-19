@@ -3,6 +3,7 @@ import '../models/resident_model.dart';
 import '../models/block_model.dart';
 import '../services/resident_service.dart';
 import '../services/block_service.dart';
+import 'resident_detail_screen.dart';
 
 class ResidentManagementScreen extends StatefulWidget {
   const ResidentManagementScreen({super.key});
@@ -391,11 +392,12 @@ class _ResidentManagementScreenState extends State<ResidentManagementScreen> {
             width: double.infinity,
             child: OutlinedButton(
               onPressed: () {
-                // Navigate to resident profile
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('View profile: ${resident.fullName}'),
-                    behavior: SnackBarBehavior.floating,
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => ResidentDetailScreen(
+                      residentId: resident.residentId,
+                    ),
                   ),
                 );
               },
@@ -607,14 +609,6 @@ class _ResidentManagementScreenState extends State<ResidentManagementScreen> {
               title: const Text('Owner'),
               onTap: () {
                 setState(() => _selectedType = 'OWNER');
-                Navigator.pop(context);
-                _loadResidents();
-              },
-            ),
-            ListTile(
-              title: const Text('Tenant'),
-              onTap: () {
-                setState(() => _selectedType = 'TENANT');
                 Navigator.pop(context);
                 _loadResidents();
               },

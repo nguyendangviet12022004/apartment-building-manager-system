@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/resident_model.dart';
+import '../models/resident_detail_model.dart';
 
 class ResidentService {
   static const String baseUrl = 'http://10.0.2.2:8080/api/v1/residents';
@@ -54,6 +55,29 @@ class ResidentService {
       throw Exception('Internal System Error, please contact administrator');
     } else {
       throw Exception('Unable to load resident list');
+    }
+  }
+
+  Future<ResidentDetailModel> getResidentDetails(int residentId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/$residentId'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return ResidentDetailModel.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 404) {
+      throw Exception('Resident not found');
+    } else if (response.statusCode == 500) {
+      throw Exception('Internal System Error, please contact administrator');
+    } else {
+      throw Exception('Unable to load resident details');
     }
   }
 }

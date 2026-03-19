@@ -69,4 +69,43 @@ public class ResidentDTO {
         private Integer page;
         private Integer pageSize;
     }
+
+    /**
+     * Response DTO for resident details
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class ResidentDetailResponse {
+        // Personal Information
+        private Integer userId;
+        private Long residentId;
+        private String fullName;
+        private String firstname;
+        private String lastname;
+        private String email;
+        private String phone;
+        private String avatarUrl;
+        private String dateOfBirth;
+        private String gender;
+        private String identityCard;
+        
+        // Status
+        private String status;           // ACTIVE, INACTIVE
+        private String residentCode;     // e.g., RES-49201
+        private String ownershipType;    // OWNER, TENANT
+        
+        // Apartment Information
+        private Long apartmentId;
+        private String building;         // e.g., Building A
+        private String unit;             // e.g., 402-B
+        private String apartmentType;    // e.g., 2BR Apartment
+        private Double area;             // e.g., 75.0 (m²)
+        private String moveInDate;       // e.g., January 15, 2023
+        
+        // Emergency Contact
+        private String emergencyContact;
+        private String emergencyContactRelationship;
+    }
 }

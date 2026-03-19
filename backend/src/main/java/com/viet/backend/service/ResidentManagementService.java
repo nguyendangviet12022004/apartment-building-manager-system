@@ -134,7 +134,7 @@ public class ResidentManagementService {
                             ? apartment.getBlock().getBlockCode() : null)
                     .unitNumber(apartment != null ? apartment.getApartmentCode() : null)
                     .status(status)
-                    .ownershipType("OWNER")  // Default, extend when ownership entity exists
+                    .ownershipType("OWNER")  // Default ownership type
                     .identityCard(resident.getIdentityCard())
                     .emergencyContact(resident.getEmergencyContact())
                     .moveInDate(null)  // Extend when move-in date is added
@@ -215,5 +215,86 @@ public class ResidentManagementService {
         }
         
         return initials.length() > 0 ? initials.toString().toUpperCase() : "R";
+    }
+
+    /**
+     * Get resident details by resident ID
+     */
+    @Transactional(readOnly = true)
+    public ResidentDTO.ResidentDetailResponse getResidentDetails(Long residentId) {
+        log.info("Fetching details for resident ID: {}", residentId);
+        
+        Resident resident = residentRepository.findById(residentId)
+                .orElseThrow(() -> new RuntimeException("Resident not found with ID: " + residentId));
+        
+        User user = resident.getUser();
+        if (user == null) {
+            throw new RuntimeException("User not found for resident ID: " + residentId);
+        }
+        
+        // Get apartment info
+        List<Apartment> apartments = apartmentRepository.findByResidentId(residentId);
+        Apartment apartment = apartments.isEmpty() ? null : apartments.get(0);
+        
+        String firstName = user.getFirstname() != null ? user.getFirstname() : "";
+        String lastName = user.getLastname() != null ? user.getLastname() : "";
+        String fullName = (firstName + " " + lastName).trim();
+        if (fullName.isEmpty()) {
+            fullName = user.getEmail();
+        }
+        
+        // Determine status
+        String status = (apartment != null) ? "ACTIVE" : "INACTIVE";
+        
+        // Generate resident code (RES-xxxxx format)
+        String residentCode = "RES-" + String.format("%05d", residentId);
+        
+        // Format building name
+        String building = apartment != null && apartment.getBlock() != null 
+                ? "Building " + apartment.getBlock().getBlockCode() 
+                : null;
+        
+        // Format unit (apartment code)
+        String unit = apartment != null ? apartment.getApartmentCode() : null;
+        
+        // Determine apartment type based on area (simplified logic)
+        String apartmentType = null;
+        if (apartment != null && apartment.getArea() != null) {
+            double area = apartment.getArea();
+            if (area < 60) {
+                apartmentType = "1BR Apartment";
+            } else if (area < 80) {
+                apartmentType = "2BR Apartment";
+            } else if (area < 100) {
+                apartmentType = "3BR Apartment";
+            } else {
+                apartmentType = "4BR Apartment";
+            }
+        }
+        
+        return ResidentDTO.ResidentDetailResponse.builder()
+                .userId(user.getId())
+                .residentId(residentId)
+                .fullName(fullName)
+                .firstname(firstName)
+                .lastname(lastName)
+                .email(user.getEmail())
+                .phone(user.getPhone())
+                .avatarUrl(user.getAvatarUrl())
+                .dateOfBirth(user.getDateOfBirth())
+                .gender(user.getGender())
+                .identityCard(resident.getIdentityCard())
+                .status(status)
+                .residentCode(residentCode)
+                .ownershipType("OWNER")  // Default ownership type
+                .apartmentId(apartment != null ? apartment.getId() : null)
+                .building(building)
+                .unit(unit)
+                .apartmentType(apartmentType)
+                .area(apartment != null ? apartment.getArea() : null)
+                .moveInDate(null)  // Extend when move-in date is added to database
+                .emergencyContact(resident.getEmergencyContact())
+                .emergencyContactRelationship(resident.getEmergencyContactRelationship())
+                .build();
     }
 }

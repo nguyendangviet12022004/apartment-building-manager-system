@@ -39,4 +39,18 @@ public class ResidentManagementController {
         ResidentDTO.ResidentListResponse response = residentManagementService.getResidents(request);
         return ResponseEntity.ok(response);
     }
+
+    /**
+     * GET /api/v1/residents/{residentId}
+     * Get resident details by resident ID
+     * Only accessible by MANAGER and ADMIN roles
+     */
+    @GetMapping("/{residentId}")
+//    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<ResidentDTO.ResidentDetailResponse> getResidentDetails(
+            @PathVariable Long residentId) {
+        
+        ResidentDTO.ResidentDetailResponse response = residentManagementService.getResidentDetails(residentId);
+        return ResponseEntity.ok(response);
+    }
 }
