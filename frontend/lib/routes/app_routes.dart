@@ -19,6 +19,8 @@ import '../screens/resident_management_screen.dart';
 import '../models/request_model.dart';
 import '../screens/add_apartment_screen.dart';
 import '../screens/apartment_list_screen.dart';
+import '../screens/apartment_detail_screen.dart';
+import '../screens/edit_apartment_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -41,6 +43,8 @@ class AppRoutes {
   static const String profile = '/profile';
   static const String residentManagement = '/resident-management';
   static const String apartmentList = '/apartments';
+  static const String apartmentDetail = '/apartment-detail';
+  static const String editApartment = '/edit-apartment';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -61,6 +65,14 @@ class AppRoutes {
     profile: (context) => const ProfileScreen(),
     residentManagement: (context) => const ResidentManagementScreen(),
     apartmentList: (context) => const ApartmentListScreen(),
+    apartmentDetail: (context) {
+      final id = ModalRoute.of(context)!.settings.arguments as int;
+      return ApartmentDetailScreen(apartmentId: id);
+    },
+    editApartment: (context) {
+      final apt = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      return EditApartmentScreen(apartmentDetail: apt);
+    },
 
     // bills: (context) => const BillsPage(),
     requestDetailResponse: (context) {

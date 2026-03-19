@@ -49,6 +49,31 @@ public class ApartmentService {
         return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
     }
 
+    @Transactional
+    public ApartmentResponse updateApartment(Long id, ApartmentRequest request) {
+        Apartment apartment = apartmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Apartment not found: " + id));
+
+        Block block = blockRepository.findById(request.getBlockId())
+                .orElseThrow(() -> new RuntimeException("Block not found with: " + request.getBlockId()));
+
+        String code = request.getApartmentCode();
+        validateApartmentCode(code, block, request.getFloor());
+
+        Optional<Apartment> existingCodeApt = apartmentRepository.findByApartmentCodeWithBlock(code);
+        if (existingCodeApt.isPresent() && !existingCodeApt.get().getId().equals(id)) {
+            throw new RuntimeException("Apartment code already exists system-wide: " + code);
+        }
+
+        apartment.setApartmentCode(code);
+        apartment.setFloor(request.getFloor());
+        apartment.setArea(request.getArea());
+        apartment.setStatus(request.getStatus());
+        apartment.setBlock(block);
+
+        return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
+    }
+
     public Optional<Long> findApartmentIdByUserId(Integer userId) {
         return apartmentRepository
                 .findByResidentUserId(userId)

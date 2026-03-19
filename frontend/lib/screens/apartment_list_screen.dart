@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_apartment_service.dart';
+import 'apartment_detail_screen.dart';
 
 class ApartmentListScreen extends StatefulWidget {
   const ApartmentListScreen({super.key});
@@ -12,13 +13,13 @@ class ApartmentListScreen extends StatefulWidget {
 
 class _ApartmentListScreenState extends State<ApartmentListScreen> {
   final ApiApartmentService _apiService = ApiApartmentService();
-  
+
   List<dynamic> _apartments = [];
   bool _isLoading = true;
   String _errorMessage = '';
-  
+
   String _searchQuery = '';
-  String _selectedStatus = 'All Units'; // All Units, Occupied, Vacant
+  String _selectedStatus = 'All Units'; // All Units, Occupied, Vacant, Fixing
 
   int _currentPage = 0;
   bool _isLastPage = false;
@@ -35,7 +36,8 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
     _fetchApartments();
 
     _scrollController.addListener(() {
-      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200 &&
+      if (_scrollController.position.pixels >=
+              _scrollController.position.maxScrollExtent - 200 &&
           !_isLoadingMore &&
           !_isLastPage) {
         _loadMoreApartments();
@@ -55,11 +57,17 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
     }
 
     try {
-      final token = Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
+      final token =
+          Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
+      String? filterStatus;
+      if (_selectedStatus != 'All Units') {
+        filterStatus = _selectedStatus.toUpperCase();
+      }
+
       final response = await _apiService.getApartments(
         token: token,
         keyword: _searchQuery,
-        status: _selectedStatus == 'All Units' ? null : _selectedStatus,
+        status: filterStatus,
         page: _currentPage,
         size: 10,
       );
@@ -88,10 +96,10 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
     setState(() {
       _isLoadingMore = true;
     });
-    
+
     _currentPage++;
     await _fetchApartments(reset: false);
-    
+
     setState(() {
       _isLoadingMore = false;
     });
@@ -146,7 +154,10 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
         children: [
           // Header
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 24.0,
+              vertical: 16.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -190,9 +201,15 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
                     decoration: InputDecoration(
                       hintText: 'Search apartment code...',
                       hintStyle: const TextStyle(color: Colors.black38),
-                      prefixIcon: const Icon(Icons.search, color: Colors.black38),
+                      prefixIcon: const Icon(
+                        Icons.search,
+                        color: Colors.black38,
+                      ),
                       border: InputBorder.none,
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                     ),
                   ),
                 ),
@@ -207,20 +224,20 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
                       _buildFilterButton('Occupied'),
                       const SizedBox(width: 12),
                       _buildFilterButton('Vacant'),
+                      const SizedBox(width: 12),
+                      _buildFilterButton('Fixing'),
                     ],
                   ),
                 ),
               ],
             ),
           ),
-          
+
           // List Content
-          Expanded(
-            child: _buildListContent(),
-          ),
+          Expanded(child: _buildListContent()),
         ],
       ),
-      // Mock Bottom Nav Bar 
+      // Mock Bottom Nav Bar
       bottomNavigationBar: BottomNavigationBar(
         selectedItemColor: _primaryMaroon,
         unselectedItemColor: Colors.black54,
@@ -232,8 +249,14 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
         },
         items: const [
           BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.dashboard_customize), label: 'Services'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Invoices'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard_customize),
+            label: 'Services',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.receipt_long),
+            label: 'Invoices',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.person), label: 'Profile'),
         ],
       ),
@@ -256,7 +279,7 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
                     color: _primaryMaroon.withOpacity(0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
-                  )
+                  ),
                 ]
               : null,
           border: isSelected ? null : Border.all(color: Colors.black12),
@@ -276,7 +299,7 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
     if (_isLoading) {
       return Center(child: CircularProgressIndicator(color: _primaryMaroon));
     }
-    
+
     if (_errorMessage.isNotEmpty) {
       return Center(
         child: Column(
@@ -298,7 +321,7 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
         ),
       );
     }
-    
+
     if (_apartments.isEmpty) {
       return const Center(
         child: Text(
@@ -316,7 +339,9 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
         if (index == _apartments.length) {
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(child: CircularProgressIndicator(color: _primaryMaroon)),
+            child: Center(
+              child: CircularProgressIndicator(color: _primaryMaroon),
+            ),
           );
         }
         return _buildApartmentCard(_apartments[index]);
@@ -324,139 +349,186 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
     );
   }
 
-  Widget _buildApartmentCard(Map<String, dynamic> apt) {
-    final bool isOccupied = apt['status'] == 'Occupied' || apt['status'] == 'OCCUPIED';
-    
-    // Fallback if area is null or different format
-    final dynamic areaRaw = apt['area'];
-    final String areaStr = areaRaw != null ? areaRaw.toString() : '0.0';
-    
+  String _normalizeStatus(String? rawStatus) {
+    if (rawStatus == null || rawStatus.isEmpty) return 'VACANT';
+    final upper = rawStatus.toUpperCase().trim();
+    if (upper == 'AVAILABLE' || upper == 'VACANT') return 'VACANT';
+    if (upper == 'OCCUPIED') return 'OCCUPIED';
+    if (upper == 'FIXING' || upper == 'MAINTENANCE') return 'FIXING';
+    return upper;
+  }
+
+  Widget _buildStatusBadge(String rawStatus) {
+    final status = _normalizeStatus(rawStatus);
+    Color bgColor;
+    Color textColor;
+    String label;
+    if (status == 'OCCUPIED') {
+      bgColor = const Color(0xFFFFEAEA);
+      textColor = const Color(0xFFB84566); // match red
+      label = 'Occupied';
+    } else if (status == 'FIXING') {
+      bgColor = const Color(0xFFFFF4E5);
+      textColor = const Color(0xFFE6A23C); // match orange
+      label = 'Fixing';
+    } else {
+      bgColor = const Color(0xFFE6F4EA);
+      textColor = const Color(0xFF1E8E3E); // match green
+      label = 'Vacant';
+    }
+
     return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      padding: const EdgeInsets.all(24),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 15,
-            offset: const Offset(0, 8),
+        color: bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: textColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: textColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.0,
+              color: textColor,
+            ),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    apt['apartmentCode'] ?? 'Unknown',
-                    style: const TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.w900,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'BLOCK ${apt['blockCode'] ?? '?'} • FLOOR ${apt['floor'] ?? '?'}',
-                    style: const TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.2,
-                      color: Colors.black45,
-                    ),
-                  ),
-                ],
-              ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isOccupied ? const Color(0xFFFFEAEA) : const Color(0xFFF3F0EE),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
+    );
+  }
+
+  Widget _buildApartmentCard(Map<String, dynamic> apt) {
+
+    // Fallback if area is null or different format
+    final dynamic areaRaw = apt['area'];
+    final String areaStr = areaRaw != null ? areaRaw.toString() : '0.0';
+
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => ApartmentDetailScreen(apartmentId: apt['id']),
+          ),
+        );
+        if (result == true && mounted) {
+          _fetchApartments(reset: true);
+        }
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 16),
+        padding: const EdgeInsets.all(24),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.03),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      isOccupied ? 'OCCUPIED' : 'VACANT',
+                      apt['apartmentCode'] ?? 'Unknown',
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'BLOCK ${apt['blockCode'] ?? '?'} • FLOOR ${apt['floor'] ?? '?'}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.2,
+                        color: Colors.black45,
+                      ),
+                    ),
+                  ],
+                ),
+                _buildStatusBadge(apt['status']),
+              ],
+            ),
+            const SizedBox(height: 24),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'TOTAL AREA',
                       style: TextStyle(
                         fontSize: 9,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1.0,
-                        color: isOccupied ? const Color(0xFFB84566) : const Color(0xFF8B7770),
+                        color: Colors.black38,
                       ),
                     ),
-                    const SizedBox(width: 4),
-                    Icon(
-                      Icons.arrow_forward_ios,
-                      size: 8,
-                      color: isOccupied ? const Color(0xFFB84566) : const Color(0xFF8B7770),
-                    )
+                    const SizedBox(height: 4),
+                    Text(
+                      '$areaStr m²',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                      ),
+                    ),
                   ],
                 ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'TOTAL AREA',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                      color: Colors.black38,
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'CATEGORY',
+                      style: TextStyle(
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1.0,
+                        color: Colors.black38,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '$areaStr m²',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
+                    const SizedBox(height: 4),
+                    const Text(
+                      'Standard', // Currently static as backend does not contain category
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.black87,
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'CATEGORY',
-                    style: TextStyle(
-                      fontSize: 9,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1.0,
-                      color: Colors.black38,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  const Text(
-                    'Standard', // Currently static as backend does not contain category
-                    style: TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.black87,
-                    ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

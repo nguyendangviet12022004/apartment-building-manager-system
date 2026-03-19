@@ -57,7 +57,24 @@ public class ApartmentController {
 
     // GET /api/v1/apartments/{id}
     @GetMapping("/{id}")
-    public ApartmentDTO getById(@PathVariable Long id) {
-        return apartmentService.getById(id);
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(apartmentService.getById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("message", "Apartment not found"));
+        }
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<?> updateApartment(@PathVariable Long id, @Valid @RequestBody ApartmentRequest request) {
+        try {
+            return ResponseEntity.ok(apartmentService.updateApartment(id, request));
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("not found")) {
+                return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
+            }
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }
