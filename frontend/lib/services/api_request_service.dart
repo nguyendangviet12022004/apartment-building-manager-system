@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import '../models/request_model.dart';
 
 class ApiRequestService {
-  final String _baseUrl = 'http://10.0.2.2:8080/api/v1/requests';
+  static const String baseUrl = 'http://10.0.2.2:8080/api/v1/requests';
 
   Future<RequestPageResponse> getAllAdminRequests({
     required String token,
@@ -13,7 +13,7 @@ class ApiRequestService {
     int size = 10,
     String sort = 'createdAt,desc',
   }) async {
-    String url = '$_baseUrl/admin?page=$page&size=$size&sort=$sort';
+    String url = '$baseUrl/admin?page=$page&size=$size&sort=$sort';
     if (status != null) {
       url += '&status=${status.name}';
     }
@@ -40,7 +40,7 @@ class ApiRequestService {
     int size = 10,
   }) async {
     final response = await http.get(
-      Uri.parse('$_baseUrl/user/$userId?page=$page&size=$size'),
+      Uri.parse('$baseUrl/user/$userId?page=$page&size=$size'),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
@@ -61,7 +61,7 @@ class ApiRequestService {
     required String description,
     List<File>? files,
   }) async {
-    final uri = Uri.parse('$_baseUrl/user/$userId');
+    final uri = Uri.parse('$baseUrl/user/$userId');
     final request = http.MultipartRequest('POST', uri);
 
     request.headers['Authorization'] = 'Bearer $token';
@@ -92,7 +92,7 @@ class ApiRequestService {
     required RequestStatus status,
     String? responseText,
   }) async {
-    String url = '$_baseUrl/$requestId/status?status=${status.name}';
+    String url = '$baseUrl/$requestId/status?status=${status.name}';
     if (responseText != null) {
       url += '&response=$responseText';
     }
@@ -122,7 +122,7 @@ class ApiRequestService {
     // Backend expects LocalDateTime in a format it can parse. ISO-8601 is usually fine.
     final response = await http.patch(
       Uri.parse(
-        '$_baseUrl/$requestId/timeline?solvedBy=${solvedBy.toIso8601String()}',
+        '$baseUrl/$requestId/timeline?solvedBy=${solvedBy.toIso8601String()}',
       ),
       headers: {
         'Content-Type': 'application/json',
