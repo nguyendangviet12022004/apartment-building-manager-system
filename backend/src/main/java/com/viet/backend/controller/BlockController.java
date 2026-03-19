@@ -6,10 +6,10 @@ import com.viet.backend.service.BlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/v1/blocks")
@@ -23,8 +23,9 @@ public class BlockController {
         return ResponseEntity.ok(blockService.createBlock(request));
     }
 
-    @org.springframework.web.bind.annotation.GetMapping
-    public java.util.List<Block> getAllBlocks() {
-        return blockService.getAllBlocks();
+    @GetMapping
+//    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<List<Block>> getAllBlocks() {
+        return ResponseEntity.ok(blockService.getAllBlocks());
     }
 }

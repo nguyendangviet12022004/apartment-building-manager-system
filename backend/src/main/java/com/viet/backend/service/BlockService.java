@@ -7,6 +7,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 @Service
 @RequiredArgsConstructor
 public class BlockService {
@@ -31,7 +33,9 @@ public class BlockService {
 
         return blockRepository.save(block);
     }
-    public java.util.List<Block> getAllBlocks() {
+
+    @Transactional(readOnly = true)
+    public List<Block> getAllBlocks() {
         return blockRepository.findAll();
     }
 }
