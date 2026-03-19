@@ -10,8 +10,10 @@ import org.springframework.stereotype.Repository;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+
 @Repository
-public interface ApartmentRepository extends JpaRepository<Apartment, Long> {
+public interface ApartmentRepository extends JpaRepository<Apartment, Long>, JpaSpecificationExecutor<Apartment> {
 
     @EntityGraph(attributePaths = { "block" })
     Optional<Apartment> findWithBlockById(Long id);
