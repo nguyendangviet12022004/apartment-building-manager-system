@@ -74,4 +74,23 @@ class ApiApartmentService {
       throw Exception('Failed to load apartments');
     }
   }
+
+  Future<Map<String, dynamic>> getApartmentDetail({
+    required String token,
+    required int id,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Unable to load apartment details');
+    }
+  }
 }
