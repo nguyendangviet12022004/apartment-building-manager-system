@@ -22,4 +22,9 @@ public class BlockController {
     public ResponseEntity<Block> createBlock(@Valid @RequestBody BlockRequest request) {
         return ResponseEntity.ok(blockService.createBlock(request));
     }
+
+    @org.springframework.web.bind.annotation.GetMapping
+    public java.util.List<Block> getAllBlocks() {
+        return blockService.getAllBlocks();
+    }
 }

@@ -14,7 +14,9 @@ import '../screens/bills_page.dart';
 import '../screens/create_invoice_page.dart';
 import '../screens/invoice_list_management_screen.dart';
 import '../screens/request_detail_response_screen.dart';
+import '../screens/profile_screen.dart';
 import '../models/request_model.dart';
+import '../screens/add_apartment_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -33,6 +35,9 @@ class AppRoutes {
   static const String invoiceList = '/invoice-list';
   static const String requestDetailResponse = '/admin/request-response';
 
+  static const String addApartment = '/add-apartment';
+  static const String profile = '/profile';
+
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
     residentHome: (context) => const ResidentHomeScreen(),
@@ -47,6 +52,10 @@ class AppRoutes {
     notifications: (context) => const NotificationsScreen(),
     createInvoice: (context) => const CreateInvoicePage(),
     invoiceList: (_) => const InvoiceListManagementScreen(),
+
+    addApartment: (context) => const AddApartmentScreen(),
+    profile: (context) => const ProfileScreen(),
+
     // bills: (context) => const BillsPage(),
     requestDetailResponse: (context) {
       final request =

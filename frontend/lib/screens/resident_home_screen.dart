@@ -567,39 +567,7 @@ class Body extends StatelessWidget {
                   } else if (item.$2 == 'Invoices') {
                     _onActionTap(context, AppRoutes.bills, item.$2);
                   } else if (item.$2 == 'Profile') {
-                    showModalBottomSheet(
-                      context: context,
-                      builder: (context) => SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            ListTile(
-                              leading: const Icon(Icons.person, color: Colors.blueAccent),
-                              title: const Text('Change Password'),
-                              onTap: () {
-                                Navigator.pop(context);
-                                Navigator.pushNamed(context, AppRoutes.changePassword);
-                              },
-                            ),
-                            ListTile(
-                              leading: const Icon(Icons.logout, color: Colors.redAccent),
-                              title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
-                              onTap: () async {
-                                Navigator.pop(context);
-                                await context.read<AuthProvider>().logout();
-                                if (context.mounted) {
-                                  Navigator.pushNamedAndRemoveUntil(
-                                    context,
-                                    AppRoutes.login,
-                                    (route) => false,
-                                  );
-                                }
-                              },
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
+                    Navigator.pushNamed(context, AppRoutes.profile);
                   }
                 },
                 child: Column(

@@ -31,4 +31,7 @@ public class BlockService {
 
         return blockRepository.save(block);
     }
+    public java.util.List<Block> getAllBlocks() {
+        return blockRepository.findAll();
+    }
 }
