@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../services/api_apartment_service.dart';
+import 'edit_apartment_screen.dart';
 
 class ApartmentDetailScreen extends StatefulWidget {
   final int apartmentId;
@@ -17,6 +18,7 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
   bool _isLoading = true;
   String _errorMessage = '';
   Map<String, dynamic>? _apartmentDetail;
+  bool _isUpdated = false;
 
   final Color _primaryMaroon = const Color(0xFF7A2A46);
   final Color _backgroundPink = const Color(0xFFFDF8F9);
@@ -30,36 +32,46 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
 
   Future<void> _fetchApartmentDetail() async {
     try {
-      final token = Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
+      final token =
+          Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
       final data = await _apiService.getApartmentDetail(
         token: token,
         id: widget.apartmentId,
       );
-      setState(() {
-        _apartmentDetail = data;
-        _isLoading = false;
-      });
+      if (mounted) {
+        setState(() {
+          _apartmentDetail = data;
+          _isLoading = false;
+        });
+      }
     } catch (e) {
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Unable to load apartment details';
-      });
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+          _errorMessage = 'Unable to load apartment details';
+        });
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _backgroundPink,
-      appBar: AppBar(
+    return WillPopScope(
+      onWillPop: () async {
+        Navigator.pop(context, _isUpdated);
+        return false;
+      },
+      child: Scaffold(
         backgroundColor: _backgroundPink,
-        elevation: 0,
-        centerTitle: true,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Color(0xFF7A2A46)),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: const Text(
+        appBar: AppBar(
+          backgroundColor: _backgroundPink,
+          elevation: 0,
+          centerTitle: true,
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back, color: Color(0xFF7A2A46)),
+            onPressed: () => Navigator.pop(context, _isUpdated),
+          ),
+          title: const Text(
           'Apartment Details',
           style: TextStyle(
             color: Color(0xFF7A2A46),
@@ -70,16 +82,37 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.edit, color: Color(0xFF7A2A46), size: 20),
-            onPressed: () {},
+            onPressed: () async {
+              if (_apartmentDetail != null) {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        EditApartmentScreen(apartmentDetail: _apartmentDetail!),
+                  ),
+                );
+                if (result == true && mounted) {
+                  _isUpdated = true;
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _fetchApartmentDetail();
+                }
+              }
+            },
           ),
           IconButton(
-            icon: const Icon(Icons.notifications, color: Color(0xFF7A2A46), size: 20),
+            icon: const Icon(
+              Icons.notifications,
+              color: Color(0xFF7A2A46),
+              size: 20,
+            ),
             onPressed: () {},
           ),
         ],
       ),
       body: _buildBody(),
-    );
+    ));
   }
 
   Widget _buildBody() {
@@ -131,11 +164,105 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
           _buildOwnershipCard(),
           const SizedBox(height: 16),
           if (_apartmentDetail!['residentId'] != null) ...[
-             _buildResidentCard(),
-             const SizedBox(height: 16),
+            _buildResidentCard(),
+            const SizedBox(height: 16),
           ],
           _buildUtilityCard(),
+          const SizedBox(height: 24),
+          if (_apartmentDetail != null)
+            ElevatedButton(
+              onPressed: () async {
+                final result = await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        EditApartmentScreen(apartmentDetail: _apartmentDetail!),
+                  ),
+                );
+                if (result == true && mounted) {
+                  _isUpdated = true;
+                  setState(() {
+                    _isLoading = true;
+                  });
+                  _fetchApartmentDetail();
+                }
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primaryMaroon,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(24),
+                ),
+              ),
+              child: const Text(
+                'Update Apartment',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
           const SizedBox(height: 30),
+        ],
+      ),
+    );
+  }
+
+  String _normalizeStatus(String? rawStatus) {
+    if (rawStatus == null || rawStatus.isEmpty) return 'VACANT';
+    final upper = rawStatus.toUpperCase().trim();
+    if (upper == 'AVAILABLE' || upper == 'VACANT') return 'VACANT';
+    if (upper == 'OCCUPIED') return 'OCCUPIED';
+    if (upper == 'FIXING' || upper == 'MAINTENANCE') return 'FIXING';
+    return upper;
+  }
+
+  Widget _buildStatusBadge(String rawStatus, bool isDark) {
+    final status = _normalizeStatus(rawStatus);
+    Color bgColor;
+    Color textColor;
+    String label;
+    if (status == 'OCCUPIED') {
+      bgColor = isDark ? Colors.redAccent.withOpacity(0.2) : const Color(0xFFFFEAEA);
+      textColor = isDark ? Colors.redAccent : const Color(0xFFB84566);
+      label = 'Occupied';
+    } else if (status == 'FIXING') {
+      bgColor = isDark ? Colors.orangeAccent.withOpacity(0.2) : const Color(0xFFFFF4E5);
+      textColor = isDark ? Colors.orangeAccent : const Color(0xFFE6A23C);
+      label = 'Fixing';
+    } else {
+      bgColor = isDark ? Colors.greenAccent.withOpacity(0.2) : const Color(0xFFE6F4EA);
+      textColor = isDark ? Colors.greenAccent : const Color(0xFF1E8E3E);
+      label = 'Vacant';
+    }
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        color: isDark ? Colors.white.withOpacity(0.2) : bgColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: isDark ? Colors.white.withOpacity(0.5) : textColor.withOpacity(0.3)),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 8,
+            height: 8,
+            decoration: BoxDecoration(
+              color: isDark ? textColor : textColor,
+              shape: BoxShape.circle,
+            ),
+          ),
+          const SizedBox(width: 6),
+          Text(
+            label,
+            style: TextStyle(
+              color: isDark ? Colors.white : textColor,
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
@@ -143,15 +270,16 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
 
   Widget _buildHeaderImageCard() {
     final String aptCode = _apartmentDetail!['apartmentCode'] ?? 'Unknown';
-    final String status = _apartmentDetail!['status'] ?? 'Vacant';
-    final bool isOccupied = status.toUpperCase() == 'OCCUPIED';
+    final String status = _apartmentDetail!['status'] ?? 'VACANT';
 
     return Container(
       height: 220,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(24),
         image: const DecorationImage(
-          image: NetworkImage('https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80'),
+          image: NetworkImage(
+            'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80',
+          ),
           fit: BoxFit.cover,
         ),
         boxShadow: [
@@ -169,10 +297,7 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
           gradient: LinearGradient(
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
-            colors: [
-              Colors.transparent,
-              Colors.black.withOpacity(0.7),
-            ],
+            colors: [Colors.transparent, Colors.black.withOpacity(0.7)],
           ),
         ),
         child: Column(
@@ -187,7 +312,12 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
               ),
               child: Text(
                 'UNIT $aptCode',
-                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 1.5),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 10,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 1.5,
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -195,8 +325,8 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
-                Expanded(
-                  child: const Text(
+                const Expanded(
+                  child: Text(
                     'Apartment\nDetails',
                     style: TextStyle(
                       color: Colors.white,
@@ -206,31 +336,7 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
                     ),
                   ),
                 ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: Colors.white.withOpacity(0.5)),
-                  ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        decoration: BoxDecoration(
-                          color: isOccupied ? Colors.greenAccent : Colors.orangeAccent,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      const SizedBox(width: 6),
-                      Text(
-                        isOccupied ? 'Occupied' : 'Vacant',
-                        style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold),
-                      ),
-                    ],
-                  ),
-                ),
+                _buildStatusBadge(status, true),
               ],
             ),
           ],
@@ -242,8 +348,9 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
   Widget _buildArchitectureCard() {
     final String internalCode = _apartmentDetail!['apartmentCode'] ?? '-';
     final String block = _apartmentDetail!['blockCode'] ?? '?';
-    final int floor = _apartmentDetail!['floor'] ?? 0;
-    
+    final dynamic floorRaw = _apartmentDetail!['floor'];
+    final String floorStr = floorRaw != null ? floorRaw.toString() : '0';
+
     final dynamic areaRaw = _apartmentDetail!['area'];
     final String areaStr = areaRaw != null ? areaRaw.toString() : '0.0';
 
@@ -253,7 +360,11 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
         color: _cardBackground,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -264,7 +375,11 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
             children: [
               Text(
                 'Building Architecture',
-                style: TextStyle(color: _primaryMaroon, fontSize: 16, fontWeight: FontWeight.w800),
+                style: TextStyle(
+                  color: _primaryMaroon,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                ),
               ),
               Icon(Icons.business, color: Colors.grey[400]),
             ],
@@ -279,19 +394,39 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
           const SizedBox(height: 20),
           Row(
             children: [
-              Expanded(child: _buildInfoItem('FLOOR LEVEL', '${floor}th Floor')),
+              Expanded(
+                child: _buildInfoItem('FLOOR LEVEL', '${floorStr}th Floor'),
+              ),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text('TOTAL AREA', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black45, letterSpacing: 1.0)),
+                    const Text(
+                      'TOTAL AREA',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black45,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     RichText(
                       text: TextSpan(
                         text: areaStr,
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87),
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w900,
+                          color: Colors.black87,
+                        ),
                         children: const [
-                          TextSpan(text: ' m²', style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal)),
+                          TextSpan(
+                            text: ' m²',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.normal,
+                            ),
+                          ),
                         ],
                       ),
                     ),
@@ -311,12 +446,21 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
       children: [
         Text(
           label,
-          style: const TextStyle(fontSize: 10, fontWeight: FontWeight.bold, color: Colors.black45, letterSpacing: 1.0),
+          style: const TextStyle(
+            fontSize: 10,
+            fontWeight: FontWeight.bold,
+            color: Colors.black45,
+            letterSpacing: 1.0,
+          ),
         ),
         const SizedBox(height: 4),
         Text(
           value,
-          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87),
+          style: const TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w900,
+            color: Colors.black87,
+          ),
         ),
       ],
     );
@@ -329,7 +473,11 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
         color: _primaryMaroon,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: _primaryMaroon.withOpacity(0.3), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: _primaryMaroon.withOpacity(0.3),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -341,18 +489,39 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Ownership', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Ownership',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   SizedBox(height: 2),
-                  Text('STATUS AND TIMELINE', style: TextStyle(color: Colors.white70, fontSize: 10, letterSpacing: 1.0)),
+                  Text(
+                    'STATUS AND TIMELINE',
+                    style: TextStyle(
+                      color: Colors.white70,
+                      fontSize: 10,
+                      letterSpacing: 1.0,
+                    ),
+                  ),
                 ],
               ),
-              Icon(Icons.verified_user, color: Colors.white.withOpacity(0.2), size: 36),
+              Icon(
+                Icons.verified_user,
+                color: Colors.white.withOpacity(0.2),
+                size: 36,
+              ),
             ],
           ),
           const SizedBox(height: 24),
           _buildDarkInnerCard('TYPE', 'Standard'),
           const SizedBox(height: 12),
-          _buildDarkInnerCard('STATUS', _apartmentDetail!['status'] ?? 'Unknown'),
+          _buildDarkInnerCard(
+            'STATUS',
+            _normalizeStatus(_apartmentDetail!['status']),
+          ),
         ],
       ),
     );
@@ -369,25 +538,45 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(label, style: const TextStyle(color: Colors.white54, fontSize: 9, fontWeight: FontWeight.bold, letterSpacing: 1.5)),
+          Text(
+            label,
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 9,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1.5,
+            ),
+          ),
           const SizedBox(height: 4),
-          Text(value, style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          Text(
+            value,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
         ],
       ),
     );
   }
 
   Widget _buildResidentCard() {
-    final String residentName = _apartmentDetail!['residentName'] ?? 'No Resident';
+    final String residentName =
+        _apartmentDetail!['residentName'] ?? 'No Resident';
     final String residentEmail = _apartmentDetail!['residentEmail'] ?? '-';
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         color: _cardBackground,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -400,7 +589,9 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   image: const DecorationImage(
-                    image: NetworkImage('https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80'),
+                    image: NetworkImage(
+                      'https://images.unsplash.com/photo-1599566150163-29194dcaad36?ixlib=rb-4.0.3&auto=format&fit=crop&w=200&q=80',
+                    ),
                     fit: BoxFit.cover,
                   ),
                   border: Border.all(color: _backgroundPink, width: 3),
@@ -411,16 +602,26 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(residentName, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.black87)),
+                    Text(
+                      residentName,
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                        color: Colors.black87,
+                      ),
+                    ),
                     const SizedBox(height: 4),
-                    const Text('Primary Resident', style: TextStyle(fontSize: 12, color: Colors.black54)),
+                    const Text(
+                      'Primary Resident',
+                      style: TextStyle(fontSize: 12, color: Colors.black54),
+                    ),
                   ],
                 ),
               ),
             ],
           ),
           const SizedBox(height: 20),
-          _buildContactRow(Icons.phone, 'PHONE', '+1 (Not provided)'), // Email is provided, phone isn't typical in DTO but following design
+          _buildContactRow(Icons.phone, 'PHONE', '+1 (Not provided)'),
           const SizedBox(height: 16),
           _buildContactRow(Icons.email, 'EMAIL', residentEmail),
         ],
@@ -443,9 +644,24 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
         Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(label, style: const TextStyle(fontSize: 9, fontWeight: FontWeight.bold, color: Colors.black38, letterSpacing: 1.0)),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 9,
+                fontWeight: FontWeight.bold,
+                color: Colors.black38,
+                letterSpacing: 1.0,
+              ),
+            ),
             const SizedBox(height: 2),
-            Text(value, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w700, color: Colors.black87)),
+            Text(
+              value,
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: Colors.black87,
+              ),
+            ),
           ],
         ),
       ],
@@ -459,7 +675,11 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
         color: _cardBackground,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
-          BoxShadow(color: Colors.black.withOpacity(0.03), blurRadius: 15, offset: const Offset(0, 8)),
+          BoxShadow(
+            color: Colors.black.withOpacity(0.03),
+            blurRadius: 15,
+            offset: const Offset(0, 8),
+          ),
         ],
       ),
       child: Column(
@@ -471,15 +691,32 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
               const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Utility\nEfficiency', style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.black87)),
+                  Text(
+                    'Utility\nEfficiency',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.black87,
+                    ),
+                  ),
                   SizedBox(height: 4),
-                  Text('Real-time\nconsumption metrics', style: TextStyle(fontSize: 10, color: Colors.black45)),
+                  Text(
+                    'Real-time\nconsumption metrics',
+                    style: TextStyle(fontSize: 10, color: Colors.black45),
+                  ),
                 ],
               ),
               Row(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('98.4%', style: TextStyle(fontSize: 28, fontWeight: FontWeight.w900, color: _primaryMaroon)),
+                  Text(
+                    '98.4%',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w900,
+                      color: _primaryMaroon,
+                    ),
+                  ),
                   const SizedBox(width: 4),
                   Icon(Icons.trending_up, color: _primaryMaroon, size: 18),
                 ],

@@ -93,4 +93,47 @@ class ApiApartmentService {
       throw Exception('Unable to load apartment details');
     }
   }
+
+  Future<void> updateApartment({
+    required int id,
+    required String token,
+    required String apartmentCode,
+    required int floor,
+    required double area,
+    required String status,
+    required int blockId,
+  }) async {
+    final response = await http.put(
+      Uri.parse('$baseUrl/$id'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'apartmentCode': apartmentCode,
+        'floor': floor,
+        'area': area,
+        'status': status,
+        'blockId': blockId,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      String errorMessage = 'Failed to update apartment';
+      try {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        if (errorData.containsKey('errors')) {
+           final Map<String, dynamic> errors = errorData['errors'];
+           errorMessage = errors.values.first.toString();
+        } else if (errorData.containsKey('message')) {
+           errorMessage = errorData['message'];
+        } else {
+           errorMessage = response.body; 
+        }
+      } catch (_) {
+        errorMessage = response.body;
+      }
+      throw errorMessage;
+    }
+  }
 }

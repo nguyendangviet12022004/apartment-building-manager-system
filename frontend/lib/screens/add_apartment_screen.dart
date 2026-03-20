@@ -26,7 +26,7 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
   String? blockId; // Maps to Block ID
   int? floor;
   double? area;
-  String status = 'Vacant'; // Default
+  String status = 'VACANT'; // Default
 
   bool _isLoading = false;
   bool _isLoadingBlocks = true;
@@ -267,9 +267,11 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
                             ],
                           ),
                           const SizedBox(height: 16),
-                          _buildStatusOption(title: 'Occupied', subtitle: 'TENANT ACTIVE', value: 'Occupied'),
+                          _buildStatusOption(title: 'Occupied', subtitle: 'TENANT ACTIVE', value: 'OCCUPIED'),
                           const SizedBox(height: 12),
-                          _buildStatusOption(title: 'Vacant', subtitle: 'READY FOR LISTING', value: 'Vacant'),
+                          _buildStatusOption(title: 'Vacant', subtitle: 'READY FOR LISTING', value: 'VACANT'),
+                          const SizedBox(height: 12),
+                          _buildStatusOption(title: 'Fixing', subtitle: 'UNDER MAINTENANCE', value: 'FIXING'),
                         ],
                       ),
                     ),
