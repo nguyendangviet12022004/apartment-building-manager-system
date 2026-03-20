@@ -44,6 +44,7 @@ public class Service {
     public enum ServiceType {
         METERED,   // điện, nước → quantity × unitPrice
         FIXED,     // quản lí, vệ sinh → unitPrice là tổng cố định
-        PARKING    // xe → quantity (số xe) × unitPrice
+        PARKING,    // xe → quantity (số xe) × unitPrice
+        AMENITY     // tiện ích khác → quantity × unitPrice
     }
 }
