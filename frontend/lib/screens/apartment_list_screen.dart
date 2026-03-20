@@ -530,6 +530,6 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
           ],
         ),
       ),
-    );
+    ));
   }
 }
