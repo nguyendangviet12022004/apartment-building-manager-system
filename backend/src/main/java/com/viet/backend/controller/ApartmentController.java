@@ -57,7 +57,11 @@ public class ApartmentController {
 
     // GET /api/v1/apartments/{id}
     @GetMapping("/{id}")
-    public ApartmentDTO getById(@PathVariable Long id) {
-        return apartmentService.getById(id);
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(apartmentService.getById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("message", "Apartment not found"));
+        }
     }
 }
