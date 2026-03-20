@@ -22,7 +22,6 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
   final Color statusBoxFill = const Color(0xFFF5EFEF);
 
   // Form State
-  String? apartmentCode;
   String? blockId; // Maps to Block ID
   int? floor;
   double? area;
@@ -75,9 +74,8 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
       try {
         final token = Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
         
-        await _apiService.createApartment(
+        final responseData = await _apiService.createApartment(
           token: token,
-          apartmentCode: apartmentCode!,
           floor: floor!,
           area: area!,
           status: status,
@@ -85,10 +83,21 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
         );
 
         if (!mounted) return;
+        
+        String createdCode = '';
+        if (responseData.containsKey('apartmentCode')) {
+            createdCode = responseData['apartmentCode'];
+        } else if (responseData.containsKey('data') && responseData['data'] != null && responseData['data']['apartmentCode'] != null) {
+            createdCode = responseData['data']['apartmentCode'];
+        }
+
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: const Text("Apartment created successfully"),
+            content: Text(createdCode.isNotEmpty 
+              ? "Apartment created successfully: $createdCode"
+              : "Apartment created successfully"),
             backgroundColor: primaryMaroon,
+            duration: const Duration(seconds: 4),
           ),
         );
         Navigator.pop(context); // Go back after success
@@ -171,27 +180,14 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
                     const SizedBox(height: 12),
                     const Center(
                       child: Text(
-                        'Input architectural specifications to\nregister a new apartment into the Skyline\nsystem. Code must be XXX-XXXX-XXX.',
+                        'Input architectural specifications to\nregister a new apartment into the Skyline\nsystem.',
                         textAlign: TextAlign.center,
                         style: TextStyle(fontSize: 14, color: Colors.black54, height: 1.4),
                       ),
                     ),
                     const SizedBox(height: 24),
 
-                    // Apartment Code
-                    _buildLabel('Apartment Code'),
-                    _buildTextField(
-                      hintText: 'e.g. BLK-1201-B4C',
-                      onSaved: (val) => apartmentCode = val,
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'Apartment code is required';
-                        if (!RegExp(r'^[A-Z0-9]{3}-[0-9]{4}-[A-Z0-9]{3}$').hasMatch(val)) {
-                           return 'Format required: XXX-XXXX-XXX';
-                        }
-                        return null; 
-                      },
-                    ),
-                    const SizedBox(height: 16),
+
 
                     // Block Selection
                     _buildLabel('Block'),

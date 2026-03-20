@@ -30,7 +30,7 @@ public class ApartmentService {
         Block block = blockRepository.findById(request.getBlockId())
                 .orElseThrow(() -> new RuntimeException("Block not found with id: " + request.getBlockId()));
 
-        String code = request.getApartmentCode();
+        String code = generateApartmentCode(block, request.getFloor());
         validateApartmentCode(code, block, request.getFloor());
 
         if (apartmentRepository.findByApartmentCodeWithBlock(code).isPresent()) {
@@ -101,9 +101,9 @@ public class ApartmentService {
         }
 
         // 3rd segment: Checksum verification
-//        if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
-//            throw new RuntimeException("Invalid checksum segment. Typos detected.");
-//        }
+        if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
+            throw new RuntimeException("Invalid checksum segment. Typos detected.");
+        }
     }
 
     private boolean isValidChecksum(String data, String checksum) {
@@ -119,6 +119,43 @@ public class ApartmentService {
         return checksum.equals(expected);
     }
 
+    private String generateApartmentCode(Block block, Integer floor) {
+        String blockCode = block.getBlockCode();
+        int unitCounter = 1;
+        String code = "";
+        
+        while (true) {
+            String floorPart = String.format("%02d", floor) + String.format("%02d", unitCounter);
+            String base = blockCode + "-" + floorPart;
+            
+            int sum = 0;
+            for (char c : base.toCharArray()) {
+                sum += c;
+            }
+            
+            String checksum = Integer.toHexString(sum).toUpperCase();
+            while (checksum.length() < 3) {
+                checksum = "0" + checksum;
+            }
+            if (checksum.length() > 3) {
+                checksum = checksum.substring(checksum.length() - 3);
+            }
+            
+            code = base + "-" + checksum;
+            
+            if (apartmentRepository.findByApartmentCodeWithBlock(code).isEmpty()) {
+                break;
+            }
+            
+            unitCounter++;
+            if (unitCounter > 99) {
+                throw new RuntimeException("Maximum units per floor reached.");
+            }
+        }
+        
+        return code;
+    }
+
     // Lấy tất cả apartments (dùng cho manager dropdown khi tạo invoice)
     public List<ApartmentDTO> getAll() {
         return apartmentRepository.findAllWithDetails(null)
@@ -127,11 +164,13 @@ public class ApartmentService {
                 .collect(Collectors.toList());
     }
 
-    public Page<ApartmentDTO> getApartments(String keyword, Long blockId, Integer floor, String status, Pageable pageable) {
+    public Page<ApartmentDTO> getApartments(String keyword, Long blockId, Integer floor, String status,
+            Pageable pageable) {
         Specification<Apartment> spec = Specification.where(null);
 
         if (keyword != null && !keyword.trim().isEmpty()) {
-            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("apartmentCode")), "%" + keyword.toLowerCase() + "%"));
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("apartmentCode")),
+                    "%" + keyword.toLowerCase() + "%"));
         }
 
         if (blockId != null) {
@@ -146,7 +185,8 @@ public class ApartmentService {
             spec = spec.and((root, query, cb) -> cb.equal(cb.upper(root.get("status")), status.toUpperCase()));
         }
 
-        // To avoid N+1 issues when mapping to DTO, we can use EntityGraph or let batch fetching handle it
+        // To avoid N+1 issues when mapping to DTO, we can use EntityGraph or let batch
+        // fetching handle it
         return apartmentRepository.findAll(spec, pageable).map(this::toDTO);
     }
 
