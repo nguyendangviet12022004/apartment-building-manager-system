@@ -75,12 +75,21 @@ public class InvoiceController {
     // ────────────────────────────────────────────────────
     // PUT /api/v1/invoices/{id}
     // ────────────────────────────────────────────────────
-//    @PutMapping("/{id}")
-//    public ResponseEntity<InvoiceDTO.Response> update(
-//            @PathVariable Long id,
-//            @RequestBody InvoiceDTO.Request req) {
-//        return ResponseEntity.ok(invoiceService.update(id, req));
-//    }
+    // ────────────────────────────────────────────────────
+    // PUT /api/v1/invoices/{id}
+    // Edit invoice (chỉ khi chưa PAID)
+    // ────────────────────────────────────────────────────
+    @PutMapping("/{id}")
+    public ResponseEntity<?> update(
+            @PathVariable Long id,
+            @RequestBody InvoiceDTO.Request req) {
+        try {
+            return ResponseEntity.ok(invoiceService.update(id, req));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", e.getMessage()));
+        }
+    }
 
     // ────────────────────────────────────────────────────
     // PATCH /api/v1/invoices/{id}/status

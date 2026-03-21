@@ -27,7 +27,7 @@ public class PaymentTransaction {
     private String transactionNo;    // mã GD phía VNPAY trả về sau khi thành công
 
     @Column(precision = 13, scale = 2)
-    private BigDecimal amount;
+    private Long amount;
 
     @Enumerated(EnumType.STRING)
     @Builder.Default

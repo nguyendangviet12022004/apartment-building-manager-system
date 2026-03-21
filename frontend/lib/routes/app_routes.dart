@@ -13,6 +13,7 @@ import '../screens/admin_request_screen.dart';
 import '../screens/bills_page.dart';
 import '../screens/create_invoice_page.dart';
 import '../screens/invoice_list_management_screen.dart';
+import '../screens/payment_history_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -29,6 +30,7 @@ class AppRoutes {
   static const String bills = '/bills';
   static const String createInvoice = '/create-invoice';
   static const String invoiceList = '/invoice-list';
+  static const String paymentHistory = '/payment-history';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
