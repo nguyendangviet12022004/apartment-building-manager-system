@@ -50,6 +50,64 @@ public class ApartmentService {
     }
 
     @Transactional
+    public java.util.Map<String, Object> bulkCreateApartments(com.viet.backend.dto.BulkCreateApartmentRequest request) {
+        Block block = blockRepository.findById(request.getBlockId())
+                .orElseThrow(() -> new RuntimeException("Block not found with id: " + request.getBlockId()));
+
+        int unitCounter = 1;
+        List<String> createdCodes = new java.util.ArrayList<>();
+        List<Apartment> apartmentsToSave = new java.util.ArrayList<>();
+
+        for (com.viet.backend.dto.BulkCreateApartmentRequest.ApartmentUnitRequest unitReq : request.getUnits()) {
+            String floorPart = String.format("%02d", request.getFloor()) + String.format("%02d", unitCounter);
+            String base = block.getBlockCode() + "-" + floorPart;
+            
+            int sum = 0;
+            for (char c : base.toCharArray()) {
+                sum += c;
+            }
+            
+            String checksum = Integer.toHexString(sum).toUpperCase();
+            while (checksum.length() < 3) {
+                checksum = "0" + checksum;
+            }
+            if (checksum.length() > 3) {
+                checksum = checksum.substring(checksum.length() - 3);
+            }
+            
+            String code = base + "-" + checksum;
+
+            if (apartmentRepository.findByApartmentCodeWithBlock(code).isPresent()) {
+                throw new RuntimeException("Apartment code already exists system-wide: " + code);
+            }
+
+            Apartment apartment = Apartment.builder()
+                    .apartmentCode(code)
+                    .floor(request.getFloor())
+                    .area(unitReq.getArea())
+                    .status("VACANT")
+                    .block(block)
+                    .used(false)
+                    .build();
+
+            apartmentsToSave.add(apartment);
+            createdCodes.add(code);
+
+            unitCounter++;
+            if (unitCounter > 99) {
+                throw new RuntimeException("Maximum units per floor reached.");
+            }
+        }
+
+        apartmentRepository.saveAll(apartmentsToSave);
+
+        return java.util.Map.of(
+            "totalCreated", createdCodes.size(),
+            "createdCodes", createdCodes
+        );
+    }
+
+    @Transactional
     public ApartmentResponse updateApartment(Long id, ApartmentRequest request) {
         Apartment apartment = apartmentRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Apartment not found: " + id));

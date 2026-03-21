@@ -25,6 +25,12 @@ public class ApartmentController {
         return ResponseEntity.ok(apartmentService.createApartment(request));
     }
 
+    @PostMapping("/bulk-create")
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<?> bulkCreateApartments(@Valid @RequestBody com.viet.backend.dto.BulkCreateApartmentRequest request) {
+        return ResponseEntity.ok(apartmentService.bulkCreateApartments(request));
+    }
+
     @GetMapping("/my")
     public ResponseEntity<?> getMyApartment(@RequestParam Integer userId) {
         return apartmentService.findApartmentIdByUserId(userId)

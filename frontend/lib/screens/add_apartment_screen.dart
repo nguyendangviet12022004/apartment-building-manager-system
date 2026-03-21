@@ -3,6 +3,7 @@ import '../services/api_apartment_service.dart';
 import '../services/api_block_service.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
+import 'bulk_create_apartment_screen.dart';
 
 class AddApartmentScreen extends StatefulWidget {
   const AddApartmentScreen({Key? key}) : super(key: key);
@@ -333,6 +334,29 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
                       ),
                       child: Text('Cancel', style: TextStyle(fontSize: 16, color: primaryMaroon, fontWeight: FontWeight.bold)),
+                    ),
+                    const SizedBox(height: 12),
+                    ElevatedButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => const BulkCreateApartmentScreen()),
+                        );
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        side: BorderSide(color: primaryMaroon, width: 2),
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.library_add, color: primaryMaroon, size: 18),
+                          const SizedBox(width: 8),
+                          Text('Bulk Import Apartments', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: primaryMaroon)),
+                        ],
+                      ),
                     ),
                     const SizedBox(height: 40),
                   ],
