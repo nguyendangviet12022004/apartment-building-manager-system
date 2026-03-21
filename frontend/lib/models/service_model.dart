@@ -21,14 +21,18 @@ class ServiceModel {
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
     return ServiceModel(
-    id: json['id'],
+      id: json['id'],
       serviceName: json['serviceName'],
-    unit: json['unit'],
+      unit: json['unit'],
       unitPrice: (json['unitPrice'] as num).toDouble(),
-    description: json['description'],
+      description: json['description'],
       serviceType: json['serviceType'],
       metered: json['metered'] ?? false,
       active: json['active'] ?? true,
-  );
-}
+    );
+  }
+
+  bool get isFixed {
+    return serviceType == 'FIXED';
+  }
 }
