@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/v1/services")
@@ -17,8 +18,14 @@ public class ServiceController {
 
     // GET /api/v1/services — lấy danh sách active services (cho dropdown khi tạo invoice)
     @GetMapping
-    public List<Service> getActiveServices() {
-        return serviceRepository.findByActiveTrue();
+    public List<Service> getActiveServices(@RequestParam(required = false) Service.ServiceType type) {
+        List<Service> services = serviceRepository.findByActiveTrue();
+        if (type != null) {
+            return services.stream()
+                    .filter(s -> s.getServiceType() == type)
+                    .collect(Collectors.toList());
+        }
+        return services;
     }
 
     // GET /api/v1/services/all — tất cả kể cả inactive (admin)

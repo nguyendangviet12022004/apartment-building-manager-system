@@ -5,7 +5,7 @@ import '../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/bills_page.dart';
-import 'amenity_list_screen.dart';
+import 'service_list_screen.dart';
 
 class ResidentHomeScreen extends StatelessWidget {
   const ResidentHomeScreen({super.key});
@@ -564,7 +564,7 @@ class Body extends StatelessWidget {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) => const AmenityListScreen(),
+                        builder: (_) => const ServiceListScreen(),
                       ),
                     );
                   } else if (item.$2 == 'Invoices') {
