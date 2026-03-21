@@ -38,7 +38,20 @@ public class Request {
 
     private LocalDateTime solvedBy;
 
+    private String issueType;
+
+    @Enumerated(EnumType.ORDINAL)
+    private Priority priority;
+
+    private String location;
+
+    private LocalDateTime occurrenceTime;
+
     public enum RequestStatus {
         PENDING, APPROVED, REJECTED
+    }
+
+    public enum Priority {
+        HIGH, MEDIUM, LOW
     }
 }

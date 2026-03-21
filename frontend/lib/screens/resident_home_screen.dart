@@ -249,7 +249,7 @@ class Body extends StatelessWidget {
       (Icons.credit_card, 'My Bills', AppRoutes.bills),
       (Icons.calendar_today, 'Booking', null),
       (Icons.newspaper, 'News', null),
-      (Icons.chat_bubble_outline, 'Feedback', null),
+      (Icons.chat_bubble_outline, 'Requests', AppRoutes.requestList),
       (Icons.inventory_2_outlined, 'Parcels', null),
     ];
 

@@ -21,6 +21,8 @@ class RequestModel {
   final String title;
   final String description;
   final RequestStatus status;
+  final String? issueType;
+  final String? priority;
   final DateTime createdAt;
   final DateTime? solvedBy;
   final String? response;
@@ -36,6 +38,8 @@ class RequestModel {
     required this.title,
     required this.description,
     required this.status,
+    this.issueType,
+    this.priority,
     required this.createdAt,
     this.solvedBy,
     this.response,
@@ -50,10 +54,12 @@ class RequestModel {
   factory RequestModel.fromJson(Map<String, dynamic> json) {
     return RequestModel(
       id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      status: RequestStatus.values.byName(json['status']),
-      createdAt: DateTime.parse(json['createdAt']),
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      status: RequestStatus.values.byName(json['status'] ?? 'PENDING'),
+      issueType: json['issueType'],
+      priority: json['priority'] ?? 'LOW',
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
       solvedBy: json['solvedBy'] != null
           ? DateTime.parse(json['solvedBy'])
           : null,

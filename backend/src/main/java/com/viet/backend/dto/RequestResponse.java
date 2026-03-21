@@ -20,6 +20,10 @@ public class RequestResponse {
     private String title;
     private String description;
     private Request.RequestStatus status;
+    private String issueType;
+    private Request.Priority priority;
+    private String location;
+    private LocalDateTime occurrenceTime;
     private LocalDateTime createdAt;
     private LocalDateTime solvedBy;
 
@@ -48,6 +52,10 @@ public class RequestResponse {
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .status(request.getStatus())
+                .issueType(request.getIssueType())
+                .priority(request.getPriority())
+                .location(request.getLocation())
+                .occurrenceTime(request.getOccurrenceTime())
                 .createdAt(request.getCreatedAt())
                 .solvedBy(request.getSolvedBy())
                 .userId(request.getUser().getId())

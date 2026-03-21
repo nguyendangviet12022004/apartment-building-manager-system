@@ -21,6 +21,8 @@ import '../screens/add_apartment_screen.dart';
 import '../screens/apartment_list_screen.dart';
 import '../screens/apartment_detail_screen.dart';
 import '../screens/edit_apartment_screen.dart';
+import '../screens/request_list_screen.dart';
+import '../screens/create_request_screen.dart';
 
 class AppRoutes {
   static const String home = '/home';
@@ -45,6 +47,8 @@ class AppRoutes {
   static const String apartmentList = '/apartments';
   static const String apartmentDetail = '/apartment-detail';
   static const String editApartment = '/edit-apartment';
+  static const String requestList = '/request-list';
+  static const String createRequest = '/create-request';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -65,12 +69,15 @@ class AppRoutes {
     profile: (context) => const ProfileScreen(),
     residentManagement: (context) => const ResidentManagementScreen(),
     apartmentList: (context) => const ApartmentListScreen(),
+    requestList: (context) => const RequestListScreen(),
+    createRequest: (context) => const CreateRequestScreen(),
     apartmentDetail: (context) {
       final id = ModalRoute.of(context)!.settings.arguments as int;
       return ApartmentDetailScreen(apartmentId: id);
     },
     editApartment: (context) {
-      final apt = ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
+      final apt =
+          ModalRoute.of(context)!.settings.arguments as Map<String, dynamic>;
       return EditApartmentScreen(apartmentDetail: apt);
     },
 
