@@ -4,9 +4,8 @@ import 'package:http/http.dart' as http;
 class ApiApartmentService {
   static const String baseUrl = 'http://10.0.2.2:8080/api/v1/apartments';
 
-  Future<void> createApartment({
+  Future<Map<String, dynamic>> createApartment({
     required String token,
-    required String apartmentCode,
     required int floor,
     required double area,
     required String status,
@@ -19,7 +18,6 @@ class ApiApartmentService {
         'Authorization': 'Bearer $token',
       },
       body: jsonEncode({
-        'apartmentCode': apartmentCode,
         'floor': floor,
         'area': area,
         'status': status,
@@ -45,6 +43,11 @@ class ApiApartmentService {
       // Remove 'Exception: ' prefix when throwing by just throwing a formatted string or exception 
       throw errorMessage;
     }
+    
+    if (response.body.isNotEmpty) {
+      return jsonDecode(response.body);
+    }
+    return {};
   }
 
   Future<Map<String, dynamic>> getApartments({
