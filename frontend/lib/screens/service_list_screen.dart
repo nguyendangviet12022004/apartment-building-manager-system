@@ -14,6 +14,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
   final ServiceApi _serviceApi = ServiceApi();
   late Future<List<ServiceModel>> _servicesFuture;
   String _selectedCategory = 'All';
+  String _searchQuery = '';
   final List<String> _categories = ['All', 'AMENITY', 'FIXED'];
 
   @override
@@ -77,9 +78,14 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                   children: [
                     const Icon(Icons.search, color: Colors.grey),
                     const SizedBox(width: 8),
-                    const Expanded(
+                    Expanded(
                       child: TextField(
-                        decoration: InputDecoration(
+                        onChanged: (value) {
+                          setState(() {
+                            _searchQuery = value;
+                          });
+                        },
+                        decoration: const InputDecoration(
                           hintText: 'Search amenities...',
                           border: InputBorder.none,
                           hintStyle: TextStyle(color: Colors.grey),
@@ -163,8 +169,18 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     }
 
                     final services = snapshot.data!;
-                    // Note: Filtering logic can be applied here if ServiceModel has a type field
-                    // For now displaying all as retrieved from getAmenityServices
+
+                    final filteredServices = services.where((s) {
+                      final matchesSearch = s.serviceName
+                          .toLowerCase()
+                          .contains(_searchQuery.toLowerCase());
+                      final matchesCategory = _selectedCategory == 'All'
+                          ? (s.serviceType == 'AMENITY' ||
+                                s.serviceType == 'FIXED')
+                          : s.serviceType == _selectedCategory;
+
+                      return matchesSearch && matchesCategory;
+                    }).toList();
 
                     return GridView.builder(
                       padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
@@ -175,9 +191,9 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                             crossAxisSpacing: 16,
                             mainAxisSpacing: 16,
                           ),
-                      itemCount: services.length,
+                      itemCount: filteredServices.length,
                       itemBuilder: (context, index) {
-                        return _buildServiceCard(services[index]);
+                        return _buildServiceCard(filteredServices[index]);
                       },
                     );
                   },
