@@ -139,4 +139,47 @@ class ApiApartmentService {
       throw errorMessage;
     }
   }
+
+  Future<Map<String, dynamic>> bulkCreateApartments({
+    required String token,
+    required int blockId,
+    required int floor,
+    required List<Map<String, dynamic>> units,
+  }) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/bulk-create'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+      body: jsonEncode({
+        'blockId': blockId,
+        'floor': floor,
+        'units': units,
+      }),
+    );
+
+    if (response.statusCode != 200 && response.statusCode != 201) {
+      String errorMessage = 'Failed to bulk create apartments';
+      try {
+        final Map<String, dynamic> errorData = jsonDecode(response.body);
+        if (errorData.containsKey('errors')) {
+           final Map<String, dynamic> errors = errorData['errors'];
+           errorMessage = errors.values.first.toString();
+        } else if (errorData.containsKey('message')) {
+           errorMessage = errorData['message'];
+        } else {
+           errorMessage = response.body; 
+        }
+      } catch (_) {
+        errorMessage = response.body;
+      }
+      throw errorMessage;
+    }
+    
+    if (response.body.isNotEmpty) {
+      return jsonDecode(response.body);
+    }
+    return {};
+  }
 }
