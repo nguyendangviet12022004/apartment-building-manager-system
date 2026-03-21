@@ -27,6 +27,10 @@ public class ServiceBooking {
     private LocalDateTime startTime;
     private LocalDateTime endTime;
     
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer quantity = 1; // Số lượng đăng ký (VD: 5 vé hồ bơi)
+
     private String note; // Ghi chú thêm (VD: mang thêm ghế)
 
     @Enumerated(EnumType.STRING)

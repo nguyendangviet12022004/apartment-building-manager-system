@@ -41,6 +41,10 @@ public class Service {
     @Builder.Default
     private boolean active = true;    // soft-delete / disable unused services
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer capacity = 1;     // Sức chứa tối đa cùng một thời điểm (VD: 1 sân tennis, 20 slot hồ bơi)
+
     public enum ServiceType {
         METERED,   // điện, nước → quantity × unitPrice
         FIXED,     // quản lí, vệ sinh → unitPrice là tổng cố định

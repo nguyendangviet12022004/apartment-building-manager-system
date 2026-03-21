@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/service_model.dart';
 import '../services/service_api.dart';
+import 'create_bookings_screen.dart';
 
 class ServiceListScreen extends StatefulWidget {
   const ServiceListScreen({Key? key}) : super(key: key);
@@ -51,7 +52,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                   ),
                   const SizedBox(width: 12),
                   const Text(
-                    'Service',
+                    'Services',
                     style: TextStyle(
                       fontSize: 28,
                       fontWeight: FontWeight.bold,
@@ -86,7 +87,7 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                           });
                         },
                         decoration: const InputDecoration(
-                          hintText: 'Search amenities...',
+                          hintText: 'Search services...',
                           border: InputBorder.none,
                           hintStyle: TextStyle(color: Colors.grey),
                         ),
@@ -279,7 +280,15 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     width: double.infinity,
                     height: 36,
                     child: ElevatedButton(
-                      onPressed: () {},
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) =>
+                                CreateBookingsScreen(service: item),
+                          ),
+                        );
+                      },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,

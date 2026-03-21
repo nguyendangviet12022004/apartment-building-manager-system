@@ -8,6 +8,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @RestController
@@ -24,6 +25,18 @@ public class ServiceBookingController {
         return ResponseEntity.ok(bookingRepository.findByApartment_Resident_User_Id(userId));
     }
 
+    // API lấy lịch đã đặt trong ngày để hiển thị cho user
+    @GetMapping("/schedule")
+    public ResponseEntity<List<ServiceBooking>> getSchedule(
+            @RequestParam Long serviceId,
+            @RequestParam String date) { // date format: 2023-10-27
+        
+        LocalDateTime startOfDay = java.time.LocalDate.parse(date).atStartOfDay();
+        LocalDateTime endOfDay = startOfDay.plusDays(1);
+
+        return ResponseEntity.ok(bookingRepository.findConfirmedByDate(serviceId, startOfDay, endOfDay));
+    }
+
     @PostMapping
     public ResponseEntity<?> createBooking(@RequestBody BookingRequest req, @RequestHeader("X-User-ID") Integer userId) {
         // 1. Validate Service
@@ -34,16 +47,36 @@ public class ServiceBookingController {
             return ResponseEntity.badRequest().body("Only AMENITY services can be booked via this API.");
         }
 
-        // 2. Validate Apartment (Resident)
+        // Validate Time
+        if (req.startTime.isAfter(req.endTime) || req.startTime.isEqual(req.endTime)) {
+            return ResponseEntity.badRequest().body("Start time must be before end time.");
+        }
+        if (req.startTime.isBefore(LocalDateTime.now())) {
+            return ResponseEntity.badRequest().body("Cannot book in the past.");
+        }
+
+        // 2. Validate Availability (Capacity Check)
+        List<ServiceBooking> conflicts = bookingRepository.findConflictingBookings(req.serviceId, req.startTime, req.endTime);
+        
+        int currentUsage = conflicts.stream().mapToInt(ServiceBooking::getQuantity).sum();
+        int requestedQty = req.quantity != null ? req.quantity : 1;
+
+        if (currentUsage + requestedQty > service.getCapacity()) {
+            return ResponseEntity.badRequest().body("Service is fully booked for this time slot. " +
+                    "Remaining capacity: " + (service.getCapacity() - currentUsage));
+        }
+
+        // 3. Validate Apartment (Resident)
         Apartment apartment = apartmentRepository.findByResidentUserId(userId)
                 .orElseThrow(() -> new RuntimeException("No apartment associated with this user"));
 
-        // 3. Create Booking
+        // 4. Create Booking
         ServiceBooking booking = ServiceBooking.builder()
                 .service(service)
                 .apartment(apartment)
                 .startTime(req.startTime)
                 .endTime(req.endTime)
+                .quantity(requestedQty)
                 .note(req.note)
                 .status(ServiceBooking.BookingStatus.PENDING) // Mặc định chờ duyệt hoặc Confirm luôn tùy logic
                 .build();
@@ -56,6 +89,7 @@ public class ServiceBookingController {
         private Long serviceId;
         private LocalDateTime startTime;
         private LocalDateTime endTime;
+        private Integer quantity;
         private String note;
     }
 }

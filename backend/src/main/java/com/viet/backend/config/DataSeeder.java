@@ -99,6 +99,7 @@ public class DataSeeder implements CommandLineRunner {
                 .serviceType(type)
                 .metered(type == ServiceType.METERED)
                 .active(true)
+                .capacity(type == ServiceType.AMENITY ? 5 : 1) // Mặc định amenity có capacity là 5 để test logic
                 .build();
     }
 }
