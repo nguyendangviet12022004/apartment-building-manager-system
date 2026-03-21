@@ -8,6 +8,8 @@ class ServiceModel {
   final bool metered;
   final bool active;
   final int capacity;
+  final String? openingTime;
+  final String? closingTime;
 
   ServiceModel({
     required this.id,
@@ -19,6 +21,8 @@ class ServiceModel {
     required this.metered,
     required this.active,
     required this.capacity,
+    this.openingTime,
+    this.closingTime,
   });
 
   factory ServiceModel.fromJson(Map<String, dynamic> json) {
@@ -32,6 +36,8 @@ class ServiceModel {
       metered: json['metered'] ?? false,
       active: json['active'] ?? true,
       capacity: json['capacity'] ?? 1,
+      openingTime: json['openingTime'],
+      closingTime: json['closingTime'],
     );
   }
 

@@ -83,7 +83,33 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   @override
   void initState() {
     super.initState();
-    // Không chọn ngày mặc định để người dùng buộc phải chọn
+    // Thiết lập giờ bắt đầu mặc định theo giờ mở cửa của service (nếu có)
+    if (widget.service.openingTime != null) {
+      final parsedStart = _parseTime(widget.service.openingTime!);
+      if (parsedStart != null) {
+        _startTime = parsedStart;
+        // End time mặc định là start time + 1h
+        _endTime = TimeOfDay(
+          hour: (parsedStart.hour + 1) % 24,
+          minute: parsedStart.minute,
+        );
+      }
+    }
+  }
+
+  /// Helper: Parse "08:00:00" string to TimeOfDay
+  TimeOfDay? _parseTime(String timeStr) {
+    try {
+      final parts = timeStr.split(':');
+      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Helper: Convert TimeOfDay to double (e.g., 8:30 -> 8.5)
+  double _toDouble(TimeOfDay time) {
+    return time.hour + time.minute / 60.0;
   }
 
   Future<void> _fetchSchedule() async {
@@ -293,6 +319,31 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
         const SnackBar(content: Text('Start time must be before end time.')),
       );
       return;
+    }
+
+    // Validate Operating Hours
+    if (widget.service.openingTime != null &&
+        widget.service.closingTime != null) {
+      final openTime = _parseTime(widget.service.openingTime!);
+      final closeTime = _parseTime(widget.service.closingTime!);
+
+      if (openTime != null && closeTime != null) {
+        final startDouble = _toDouble(_startTime);
+        final endDouble = _toDouble(_endTime);
+        final openDouble = _toDouble(openTime);
+        final closeDouble = _toDouble(closeTime);
+
+        if (startDouble < openDouble || endDouble > closeDouble) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                'Booking must be within operating hours (${widget.service.openingTime!.substring(0, 5)} - ${widget.service.closingTime!.substring(0, 5)})',
+              ),
+            ),
+          );
+          return;
+        }
+      }
     }
 
     // If all validations pass, show the dialog

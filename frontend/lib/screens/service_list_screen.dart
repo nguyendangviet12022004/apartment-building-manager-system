@@ -210,6 +210,13 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
   Widget _buildServiceCard(ServiceModel item) {
     final currencyFormat = NumberFormat.currency(locale: 'vi_VN', symbol: 'đ');
 
+    String? hoursText;
+    if (item.openingTime != null && item.closingTime != null) {
+      final open = item.openingTime!.substring(0, 5); // 08:00:00 -> 08:00
+      final close = item.closingTime!.substring(0, 5);
+      hoursText = '$open - $close';
+    }
+
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
@@ -254,10 +261,11 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     ),
                   ),
                   const SizedBox(height: 4),
-                  const Text(
-                    '08:00 - 22:00', // Mock data
-                    style: TextStyle(color: Colors.grey, fontSize: 12),
-                  ),
+                  if (hoursText != null)
+                    Text(
+                      hoursText,
+                      style: const TextStyle(color: Colors.grey, fontSize: 12),
+                    ),
                   const Spacer(),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -279,33 +287,61 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 36,
-                    child: ElevatedButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) =>
-                                CreateBookingsScreen(service: item),
+                  Row(
+                    children: [
+                      Expanded(
+                        flex: 1,
+                        child: SizedBox(
+                          height: 36,
+                          child: OutlinedButton(
+                            onPressed: () => _showServiceDetails(context, item),
+                            style: OutlinedButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              side: BorderSide(color: Colors.grey.shade300),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                            ),
+                            child: const Icon(
+                              Icons.visibility_outlined,
+                              size: 18,
+                              color: Colors.black,
+                            ),
                           ),
-                        );
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.black,
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(8),
                         ),
-                        padding: EdgeInsets.zero,
-                        elevation: 0,
                       ),
-                      child: const Text(
-                        'Book',
-                        style: TextStyle(fontWeight: FontWeight.bold),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        flex: 2,
+                        child: SizedBox(
+                          height: 36,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      CreateBookingsScreen(service: item),
+                                ),
+                              );
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.black,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              padding: EdgeInsets.zero,
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'Book',
+                              style: TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                          ),
+                        ),
                       ),
-                    ),
+                    ],
                   ),
                 ],
               ),
@@ -313,6 +349,173 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
           ),
         ],
       ),
+    );
+  }
+
+  void _showServiceDetails(BuildContext context, ServiceModel service) {
+    String? hoursText;
+    if (service.openingTime != null && service.closingTime != null) {
+      final open = service.openingTime!.substring(0, 5);
+      final close = service.closingTime!.substring(0, 5);
+      hoursText = '$open - $close';
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        insetPadding: const EdgeInsets.all(16),
+        child: Container(
+          // Chiều cao gần hết màn hình (85%)
+          constraints: BoxConstraints(
+            maxHeight: MediaQuery.of(context).size.height * 0.85,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // 1. Ảnh header + Nút đóng
+              Stack(
+                children: [
+                  Container(
+                    height: 220,
+                    width: double.infinity,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade200,
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(16),
+                      ),
+                    ),
+                    child: Icon(
+                      Icons.image,
+                      size: 80,
+                      color: Colors.grey.shade400,
+                    ),
+                  ),
+                  Positioned(
+                    top: 8,
+                    right: 8,
+                    child: CircleAvatar(
+                      backgroundColor: Colors.black.withOpacity(0.5),
+                      child: IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+
+              // 2. Nội dung chi tiết
+              Expanded(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        service.serviceName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        '${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(service.unitPrice)} / ${service.unit}',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          color: Colors.green,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 20),
+                      _buildDetailRow(
+                        Icons.category,
+                        'Type',
+                        service.serviceType,
+                      ),
+                      const SizedBox(height: 12),
+                      _buildDetailRow(
+                        Icons.people,
+                        'Capacity',
+                        '${service.capacity}',
+                      ),
+                      const SizedBox(height: 12),
+                      if (hoursText != null)
+                        _buildDetailRow(Icons.access_time, 'Hours', hoursText),
+                      const SizedBox(height: 24),
+                      const Text(
+                        "Description",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      // Hiển thị description nếu có (cần đảm bảo model có field này)
+                      Text(
+                        // service.description ??
+                        "No description available for this service. Please contact management for more details.",
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey.shade600,
+                          height: 1.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              // 3. Nút đặt chỗ ở dưới cùng popup
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: SizedBox(
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.pop(context); // Đóng popup
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              CreateBookingsScreen(service: service),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: const Text(
+                      "Book Now",
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: Colors.grey),
+        const SizedBox(width: 12),
+        Text("$label: ", style: const TextStyle(fontWeight: FontWeight.bold)),
+        Expanded(child: Text(value)),
+      ],
     );
   }
 }

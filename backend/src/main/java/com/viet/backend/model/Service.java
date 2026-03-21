@@ -1,9 +1,11 @@
 package com.viet.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "services")
@@ -46,6 +48,12 @@ public class Service {
     @Column(nullable = false)
     @Builder.Default
     private Integer capacity = 1;     // Sức chứa tối đa cùng một thời điểm (VD: 1 sân tennis, 20 slot hồ bơi)
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime openingTime;
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime closingTime;
 
     public enum ServiceType {
         METERED,   // điện, nước → quantity × unitPrice
