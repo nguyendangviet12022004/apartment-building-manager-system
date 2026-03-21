@@ -23,8 +23,9 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
                                                  @Param("endTime") LocalDateTime endTime);
                                                  
     // Lấy booking trong ngày để hiển thị lịch biểu
+    // Logic: Tìm các booking có thời gian giao nhau với ngày [startOfDay, endOfDay]
     @Query("SELECT b FROM ServiceBooking b WHERE b.service.id = :serviceId AND (b.status = 'CONFIRMED' OR b.status = 'PENDING') " +
-           "AND b.startTime >= :startOfDay AND b.startTime < :endOfDay ORDER BY b.startTime ASC")
+           "AND (b.startTime < :endOfDay AND b.endTime > :startOfDay) ORDER BY b.startTime ASC")
     List<ServiceBooking> findConfirmedByDate(@Param("serviceId") Long serviceId,
                                              @Param("startOfDay") LocalDateTime startOfDay,
                                              @Param("endOfDay") LocalDateTime endOfDay);

@@ -24,6 +24,7 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   final TextEditingController _noteController = TextEditingController();
 
   List<dynamic> _confirmedBookings = [];
+  List<int> _hourlyUsage = List.filled(24, 0); // Data cho biểu đồ 24h
   bool _isLoadingSchedule = false;
   bool _isSubmitting = false;
 
@@ -81,15 +82,60 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
         widget.service.id,
         dateStr,
       );
+
+      // Tính toán số lượng đặt cho từng khung giờ (0h-23h)
+      final List<int> usageList = List.filled(24, 0);
+
+      // Pre-process bookings để tránh parse lặp lại và xử lý lỗi dữ liệu từng item
+      final validBookings = [];
+      for (var booking in schedule) {
+        try {
+          validBookings.add({
+            'start': DateTime.parse(booking['startTime']),
+            'end': DateTime.parse(booking['endTime']),
+            // Sử dụng num? để chấp nhận cả int và double, sau đó toInt()
+            'qty': (booking['quantity'] as num?)?.toInt() ?? 1,
+          });
+        } catch (e) {
+          debugPrint('Invalid booking data skipped: $e');
+        }
+      }
+
+      for (int h = 0; h < 24; h++) {
+        final slotStart = DateTime(
+          _selectedDate.year,
+          _selectedDate.month,
+          _selectedDate.day,
+          h,
+          0,
+        );
+        final slotEnd = slotStart.add(const Duration(hours: 1));
+
+        for (var b in validBookings) {
+          final bStart = b['start'] as DateTime;
+          final bEnd = b['end'] as DateTime;
+          final qty = b['qty'] as int;
+
+          // Kiểm tra giao nhau: Booking có trùng vào giờ 'h' không?
+          // Logic: (StartA < EndB) && (EndA > StartB) là công thức kiểm tra giao nhau chuẩn
+          if (bStart.isBefore(slotEnd) && bEnd.isAfter(slotStart)) {
+            usageList[h] += qty;
+          }
+        }
+      }
+
       setState(() {
         _confirmedBookings = schedule;
+        _hourlyUsage = usageList;
       });
     } catch (e) {
       debugPrint('Error fetching schedule: $e');
     } finally {
-      setState(() {
-        _isLoadingSchedule = false;
-      });
+      if (mounted) {
+        setState(() {
+          _isLoadingSchedule = false;
+        });
+      }
     }
   }
 
@@ -294,51 +340,117 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
 
               // Schedule Visualization
               const Text(
-                "Khung giờ đã kín (Busy)",
-                style: TextStyle(fontWeight: FontWeight.bold),
+                "Biểu đồ số lượng đặt chỗ (0h - 24h)",
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
               ),
               const SizedBox(height: 8),
               Container(
-                height: 60,
+                height: 180,
+                padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
                 decoration: BoxDecoration(
-                  color: Colors.grey.shade100,
-                  borderRadius: BorderRadius.circular(8),
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey.shade300),
                 ),
                 child: _isLoadingSchedule
-                    ? const Center(
-                        child: SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      )
-                    : _confirmedBookings.isEmpty
-                    ? const Center(
-                        child: Text(
-                          "Hôm nay trống cả ngày",
-                          style: TextStyle(color: Colors.green),
-                        ),
-                      )
-                    : ListView.separated(
-                        padding: const EdgeInsets.symmetric(horizontal: 12),
-                        scrollDirection: Axis.horizontal,
-                        itemCount: _confirmedBookings.length,
-                        separatorBuilder: (_, __) => const SizedBox(width: 8),
-                        itemBuilder: (context, index) {
-                          final item = _confirmedBookings[index];
-                          final start = DateTime.parse(item['startTime']);
-                          final end = DateTime.parse(item['endTime']);
-                          return Chip(
-                            label: Text(
-                              '${DateFormat('HH:mm').format(start)}-${DateFormat('HH:mm').format(end)}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                              ),
+                    ? const Center(child: CircularProgressIndicator())
+                    : Column(
+                        children: [
+                          // Biểu đồ cột
+                          Expanded(
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.end,
+                              children: List.generate(24, (index) {
+                                final usage = _hourlyUsage[index];
+                                final capacity = widget.service.capacity;
+                                // Tính chiều cao cột tương đối (max 100%)
+                                final double fill = capacity > 0
+                                    ? (usage / capacity).clamp(0.0, 1.0)
+                                    : 0.0;
+
+                                // Màu sắc cảnh báo
+                                Color color = Colors.green;
+                                if (fill >= 1.0)
+                                  color = Colors.red;
+                                else if (fill >= 0.5)
+                                  color = Colors.orange;
+                                if (usage == 0) color = Colors.grey.shade200;
+
+                                return Expanded(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.end,
+                                    children: [
+                                      if (usage > 0)
+                                        Text(
+                                          '$usage',
+                                          style: const TextStyle(
+                                            fontSize: 8,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      Container(
+                                        margin: const EdgeInsets.symmetric(
+                                          horizontal: 1,
+                                        ),
+                                        height:
+                                            120 * fill +
+                                            (usage > 0 ? 4 : 2), // Min height
+                                        decoration: BoxDecoration(
+                                          color: color,
+                                          borderRadius: BorderRadius.circular(
+                                            2,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }),
                             ),
-                            backgroundColor: Colors.redAccent,
-                          );
-                        },
+                          ),
+                          const SizedBox(height: 8),
+                          // Trục hoành (Giờ)
+                          const Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                '0h',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                '6h',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                '12h',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                '18h',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              Text(
+                                '24h',
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
               ),
               const SizedBox(height: 20),
