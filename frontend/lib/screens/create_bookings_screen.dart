@@ -17,7 +17,7 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   final _formKey = GlobalKey<FormState>();
   final ServiceApi _serviceApi = ServiceApi();
 
-  late DateTime _selectedDate;
+  DateTime? _selectedDate;
   TimeOfDay _startTime = const TimeOfDay(hour: 8, minute: 0);
   TimeOfDay _endTime = const TimeOfDay(hour: 9, minute: 0);
   int _quantity = 1;
@@ -31,17 +31,19 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   /// Tính toán tổng số lượng đã được đặt trong khung giờ đang chọn.
   /// Nó sẽ quét qua các booking đã được xác nhận hoặc đang chờ duyệt.
   int get _currentUsage {
+    if (_selectedDate == null) return 0;
+
     final startDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
       _startTime.hour,
       _startTime.minute,
     );
     final endDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
       _endTime.hour,
       _endTime.minute,
     );
@@ -62,22 +64,36 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
     return usage;
   }
 
+  /// Tính tổng tiền dự kiến (Client-side estimation)
+  double get _estimatedTotal {
+    final startMinutes = _startTime.hour * 60 + _startTime.minute;
+    final endMinutes = _endTime.hour * 60 + _endTime.minute;
+
+    if (endMinutes <= startMinutes) return 0.0;
+
+    if (widget.service.unit?.toLowerCase() == 'hour') {
+      int durationInMinutes = endMinutes - startMinutes;
+      int hours = (durationInMinutes / 60).ceil(); // Làm tròn lên như Backend
+      return (widget.service.unitPrice * hours * _quantity).toDouble();
+    } else {
+      return (widget.service.unitPrice * _quantity).toDouble();
+    }
+  }
+
   @override
   void initState() {
     super.initState();
-    _selectedDate = DateTime.now().add(
-      const Duration(days: 1),
-    ); // Mặc định là ngày mai
-    _fetchSchedule();
+    // Không chọn ngày mặc định để người dùng buộc phải chọn
   }
 
   Future<void> _fetchSchedule() async {
+    if (_selectedDate == null) return;
     setState(() {
       _isLoadingSchedule = true;
     });
 
     try {
-      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate);
+      final dateStr = DateFormat('yyyy-MM-dd').format(_selectedDate!);
       final schedule = await _serviceApi.getBookingSchedule(
         widget.service.id,
         dateStr,
@@ -103,9 +119,9 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
 
       for (int h = 0; h < 24; h++) {
         final slotStart = DateTime(
-          _selectedDate.year,
-          _selectedDate.month,
-          _selectedDate.day,
+          _selectedDate!.year,
+          _selectedDate!.month,
+          _selectedDate!.day,
           h,
           0,
         );
@@ -140,49 +156,23 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   }
 
   Future<void> _submitBooking() async {
-    if (!_formKey.currentState!.validate()) return;
+    // Note: Validations are now handled in _showConfirmationDialog
+    setState(() => _isSubmitting = true);
 
-    final now = DateTime.now();
     final startDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
       _startTime.hour,
       _startTime.minute,
     );
     final endDateTime = DateTime(
-      _selectedDate.year,
-      _selectedDate.month,
-      _selectedDate.day,
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
       _endTime.hour,
       _endTime.minute,
     );
-
-    // --- VALIDATION LOGIC ---
-    if (startDateTime.isBefore(now)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Không thể đặt chỗ trong quá khứ')),
-      );
-      return;
-    }
-
-    if (endDateTime.difference(startDateTime).inMinutes < 60) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Thời gian đặt chỗ tối thiểu là 1 tiếng')),
-      );
-      return;
-    }
-
-    if (startDateTime.isAfter(endDateTime)) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Thời gian bắt đầu phải trước thời gian kết thúc'),
-        ),
-      );
-      return;
-    }
-
-    setState(() => _isSubmitting = true);
 
     try {
       final bookingData = {
@@ -197,43 +187,33 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
 
       if (!mounted) return;
 
-      // Show success and pop
-      showDialog(
-        context: context,
-        builder: (ctx) => AlertDialog(
-          title: const Text('Thành công'),
-          content: const Text('Yêu cầu đặt chỗ đã được gửi!'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.pop(ctx);
-                Navigator.pop(context);
-              },
-              child: const Text('OK'),
-            ),
-          ],
+      // Show a success message and automatically navigate back.
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking request sent successfully!'),
+          backgroundColor: Colors.green,
         ),
       );
+      Navigator.pop(context); // Go back to ServiceListScreen
     } catch (e) {
       ScaffoldMessenger.of(
         context,
-      ).showSnackBar(SnackBar(content: Text('Lỗi: $e')));
+      ).showSnackBar(SnackBar(content: Text('Error: $e')));
     } finally {
-      setState(() => _isSubmitting = false);
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 
   Future<void> _selectDate(BuildContext context) async {
     final now = DateTime.now();
-    // Tính ngày cuối cùng của tháng hiện tại
     final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+    final safeInitialDate = _selectedDate ?? now;
 
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate:
-          (_selectedDate.isAfter(lastDayOfMonth) || _selectedDate.isBefore(now))
-          ? now
-          : _selectedDate,
+      initialDate: safeInitialDate,
       firstDate: now,
       lastDate: lastDayOfMonth,
     );
@@ -266,6 +246,102 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
         }
       });
     }
+  }
+
+  Future<void> _showConfirmationDialog() async {
+    // --- VALIDATION LOGIC ---
+    if (_selectedDate == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a date first.')),
+      );
+      return;
+    }
+    if (!_formKey.currentState!.validate()) return;
+
+    final now = DateTime.now();
+    final startDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    final endDateTime = DateTime(
+      _selectedDate!.year,
+      _selectedDate!.month,
+      _selectedDate!.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+
+    if (startDateTime.isBefore(now)) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Cannot book in the past.')));
+      return;
+    }
+
+    if (endDateTime.difference(startDateTime).inMinutes < 60) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Minimum booking duration is 1 hour.')),
+      );
+      return;
+    }
+
+    if (startDateTime.isAfter(endDateTime)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Start time must be before end time.')),
+      );
+      return;
+    }
+
+    // If all validations pass, show the dialog
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Confirm Your Booking'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Please review your booking details:'),
+            const SizedBox(height: 16),
+            _buildSummaryRow('Service:', widget.service.serviceName),
+            _buildSummaryRow(
+              'Date:',
+              DateFormat('dd/MM/yyyy').format(_selectedDate!),
+            ),
+            _buildSummaryRow(
+              'Time:',
+              '${_startTime.format(context)} - ${_endTime.format(context)}',
+            ),
+            _buildSummaryRow('Quantity:', '$_quantity'),
+            const Divider(height: 24),
+            _buildSummaryRow(
+              'Total:',
+              NumberFormat.currency(
+                locale: 'en_US',
+                symbol: 'VND ',
+              ).format(_estimatedTotal),
+              isTotal: true,
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(ctx);
+              _submitBooking();
+            },
+            child: const Text('Confirm'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -304,14 +380,14 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
                 ),
               ),
               Text(
-                '${NumberFormat.currency(locale: 'vi_VN', symbol: 'đ').format(widget.service.unitPrice)} / ${widget.service.unit}',
+                '${NumberFormat.currency(locale: 'en_US', symbol: 'VND ').format(widget.service.unitPrice)} / ${widget.service.unit}',
                 style: TextStyle(color: Colors.grey.shade600, fontSize: 16),
               ),
               const SizedBox(height: 24),
 
               // Date Picker
               const Text(
-                "Ngày đặt",
+                "Booking Date",
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 8),
@@ -330,270 +406,333 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(DateFormat('dd/MM/yyyy').format(_selectedDate)),
+                      Text(
+                        _selectedDate == null
+                            ? "Tap to select a date"
+                            : DateFormat('dd/MM/yyyy').format(_selectedDate!),
+                      ),
                       const Icon(Icons.calendar_today, size: 20),
                     ],
                   ),
                 ),
               ),
               const SizedBox(height: 20),
-
-              // Schedule Visualization
-              const Text(
-                "Biểu đồ số lượng đặt chỗ (0h - 24h)",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 8),
-              Container(
-                height: 180,
-                padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.grey.shade300),
+              if (_selectedDate != null) ...[
+                // Schedule Visualization
+                const Text(
+                  "Booking Usage Chart (0h - 24h)",
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
                 ),
-                child: _isLoadingSchedule
-                    ? const Center(child: CircularProgressIndicator())
-                    : Column(
-                        children: [
-                          // Biểu đồ cột
-                          Expanded(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: List.generate(24, (index) {
-                                final usage = _hourlyUsage[index];
-                                final capacity = widget.service.capacity;
-                                // Tính chiều cao cột tương đối (max 100%)
-                                final double fill = capacity > 0
-                                    ? (usage / capacity).clamp(0.0, 1.0)
-                                    : 0.0;
+                const SizedBox(height: 8),
+                Container(
+                  height: 180,
+                  padding: const EdgeInsets.fromLTRB(8, 16, 8, 8),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: _isLoadingSchedule
+                      ? const Center(child: CircularProgressIndicator())
+                      : Column(
+                          children: [
+                            // Biểu đồ cột
+                            Expanded(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: List.generate(24, (index) {
+                                  final usage = _hourlyUsage[index];
+                                  final capacity = widget.service.capacity;
+                                  // Tính chiều cao cột tương đối (max 100%)
+                                  final double fill = capacity > 0
+                                      ? (usage / capacity).clamp(0.0, 1.0)
+                                      : 0.0;
 
-                                // Màu sắc cảnh báo
-                                Color color = Colors.green;
-                                if (fill >= 1.0)
-                                  color = Colors.red;
-                                else if (fill >= 0.5)
-                                  color = Colors.orange;
-                                if (usage == 0) color = Colors.grey.shade200;
+                                  // Màu sắc cảnh báo
+                                  Color color = Colors.green;
+                                  if (fill >= 1.0)
+                                    color = Colors.red;
+                                  else if (fill >= 0.5)
+                                    color = Colors.orange;
+                                  if (usage == 0) color = Colors.grey.shade200;
 
-                                return Expanded(
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      if (usage > 0)
-                                        Text(
-                                          '$usage',
-                                          style: const TextStyle(
-                                            fontSize: 8,
-                                            fontWeight: FontWeight.bold,
+                                  return Expanded(
+                                    child: Column(
+                                      mainAxisAlignment: MainAxisAlignment.end,
+                                      children: [
+                                        if (usage > 0)
+                                          Text(
+                                            '$usage',
+                                            style: const TextStyle(
+                                              fontSize: 8,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                        Container(
+                                          margin: const EdgeInsets.symmetric(
+                                            horizontal: 1,
+                                          ),
+                                          height:
+                                              120 * fill +
+                                              (usage > 0 ? 4 : 2), // Min height
+                                          decoration: BoxDecoration(
+                                            color: color,
+                                            borderRadius: BorderRadius.circular(
+                                              2,
+                                            ),
                                           ),
                                         ),
-                                      Container(
-                                        margin: const EdgeInsets.symmetric(
-                                          horizontal: 1,
-                                        ),
-                                        height:
-                                            120 * fill +
-                                            (usage > 0 ? 4 : 2), // Min height
-                                        decoration: BoxDecoration(
-                                          color: color,
-                                          borderRadius: BorderRadius.circular(
-                                            2,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                );
-                              }),
+                                      ],
+                                    ),
+                                  );
+                                }),
+                              ),
                             ),
+                            const SizedBox(height: 8),
+                            // Trục hoành (Giờ)
+                            const Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  '0h',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  '6h',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  '12h',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  '18h',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  '24h',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                ),
+                const SizedBox(height: 20),
+
+                // Time Picker
+                Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "Start Time",
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
                           const SizedBox(height: 8),
-                          // Trục hoành (Giờ)
-                          const Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(
-                                '0h',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
+                          InkWell(
+                            onTap: () => _selectTime(context, true),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
                               ),
-                              Text(
-                                '6h',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                '12h',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                '18h',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                              Text(
-                                '24h',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  color: Colors.grey,
-                                ),
-                              ),
-                            ],
+                              child: Text(_startTime.format(context)),
+                            ),
                           ),
                         ],
                       ),
-              ),
-              const SizedBox(height: 20),
-
-              // Time Picker
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Bắt đầu",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectTime(context, true),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(_startTime.format(context)),
-                          ),
-                        ),
-                      ],
                     ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          "Kết thúc",
-                          style: TextStyle(fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 8),
-                        InkWell(
-                          onTap: () => _selectTime(context, false),
-                          child: Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(_endTime.format(context)),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            "End Time",
+                            style: TextStyle(fontWeight: FontWeight.bold),
                           ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Quantity
-              const Text(
-                "Số lượng / Số khách",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              Row(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.remove_circle_outline),
-                    onPressed: () => setState(() {
-                      if (_quantity > 1) _quantity--;
-                    }),
-                  ),
-                  Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
-                    child: Text(
-                      '$_quantity',
-                      style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
+                          const SizedBox(height: 8),
+                          InkWell(
+                            onTap: () => _selectTime(context, false),
+                            child: Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Text(_endTime.format(context)),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.add_circle_outline),
-                    // Nút bị vô hiệu hóa nếu không thể tăng số lượng
-                    onPressed: canIncrease
-                        ? () => setState(() {
-                            _quantity++;
-                          })
-                        : null,
-                  ),
-                  const Spacer(),
-                  // Hiển thị số chỗ còn lại
-                  Text(
-                    'Còn lại: $remainingCapacity / ${widget.service.capacity}',
-                    style: TextStyle(color: Colors.grey.shade600),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 20),
-
-              // Note
-              const Text(
-                "Ghi chú",
-                style: TextStyle(fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              TextField(
-                controller: _noteController,
-                decoration: const InputDecoration(
-                  hintText: 'Nhập ghi chú nếu có...',
-                  border: OutlineInputBorder(),
+                  ],
                 ),
-                maxLines: 2,
-              ),
-              const SizedBox(height: 32),
+                const SizedBox(height: 20),
 
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitBooking,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.black,
-                    foregroundColor: Colors.white,
-                  ),
-                  child: _isSubmitting
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : const Text(
-                          'Xác nhận đặt chỗ',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                // Quantity
+                const Text(
+                  "Quantity / Guests",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.remove_circle_outline),
+                      onPressed: () => setState(() {
+                        if (_quantity > 1) _quantity--;
+                      }),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                      child: Text(
+                        '$_quantity',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.add_circle_outline),
+                      // Nút bị vô hiệu hóa nếu không thể tăng số lượng
+                      onPressed: canIncrease
+                          ? () => setState(() {
+                              _quantity++;
+                            })
+                          : null,
+                    ),
+                    const Spacer(),
+                    // Hiển thị số chỗ còn lại
+                    Text(
+                      'Available: $remainingCapacity / ${widget.service.capacity}',
+                      style: TextStyle(color: Colors.grey.shade600),
+                    ),
+                  ],
                 ),
-              ),
+                const SizedBox(height: 20),
+
+                // Note
+                const Text(
+                  "Note",
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: _noteController,
+                  decoration: const InputDecoration(
+                    hintText: 'Enter a note if any...',
+                    border: OutlineInputBorder(),
+                  ),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 24),
+
+                // Total Price Estimation
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.blue.shade200),
+                  ),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        "Estimated Total:",
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blueGrey,
+                        ),
+                      ),
+                      Text(
+                        NumberFormat.currency(
+                          locale: 'en_US',
+                          symbol: 'VND ',
+                        ).format(_estimatedTotal),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+
+                // Submit Button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _isSubmitting ? null : _showConfirmationDialog,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.black,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: _isSubmitting
+                        ? const CircularProgressIndicator(color: Colors.white)
+                        : const Text(
+                            'Confirm Booking',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildSummaryRow(String label, String value, {bool isTotal = false}) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 4.0),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(label, style: TextStyle(color: Colors.grey.shade600)),
+          Text(
+            value,
+            textAlign: TextAlign.end,
+            style: TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: isTotal ? 18 : 16,
+              color: isTotal
+                  ? Theme.of(context).colorScheme.primary
+                  : Colors.black,
+            ),
+          ),
+        ],
       ),
     );
   }

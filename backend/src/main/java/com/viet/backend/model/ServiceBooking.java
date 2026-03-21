@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Entity
@@ -33,6 +34,9 @@ public class ServiceBooking {
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
     
+    @Column(precision = 13, scale = 2)
+    private BigDecimal totalPrice;
+
     @Column(nullable = false)
     @Builder.Default
     private Integer quantity = 1; // Số lượng đăng ký (VD: 5 vé hồ bơi)
