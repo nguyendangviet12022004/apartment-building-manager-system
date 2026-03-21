@@ -4,7 +4,9 @@ class ServiceModel {
   final String? unit;
   final double unitPrice;
   final String? description;
-  final String serviceType; // METERED, FIXED, PARKING
+  final String serviceType;
+  final bool metered;
+  final bool active;
 
   ServiceModel({
     required this.id,
@@ -13,16 +15,20 @@ class ServiceModel {
     required this.unitPrice,
     this.description,
     required this.serviceType,
+    required this.metered,
+    required this.active,
   });
 
-  bool get isFixed => serviceType == 'FIXED';
-
-  factory ServiceModel.fromJson(Map<String, dynamic> json) => ServiceModel(
+  factory ServiceModel.fromJson(Map<String, dynamic> json) {
+    return ServiceModel(
     id: json['id'],
-    serviceName: json['serviceName'] ?? '',
+      serviceName: json['serviceName'],
     unit: json['unit'],
-    unitPrice: (json['unitPrice'] ?? 0).toDouble(),
+      unitPrice: (json['unitPrice'] as num).toDouble(),
     description: json['description'],
-    serviceType: json['serviceType'] ?? 'METERED',
+      serviceType: json['serviceType'],
+      metered: json['metered'] ?? false,
+      active: json['active'] ?? true,
   );
+}
 }
