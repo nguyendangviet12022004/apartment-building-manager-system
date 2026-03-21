@@ -16,14 +16,14 @@ public interface ServiceBookingRepository extends JpaRepository<ServiceBooking, 
     List<ServiceBooking> findByServiceId(Long serviceId);
 
     // Tìm các booking đã confirm có khoảng thời gian trùng với khoảng [start, end]
-    @Query("SELECT b FROM ServiceBooking b WHERE b.service.id = :serviceId AND b.status = 'CONFIRMED' " +
+    @Query("SELECT b FROM ServiceBooking b WHERE b.service.id = :serviceId AND (b.status = 'CONFIRMED' OR b.status = 'PENDING') " +
            "AND (b.startTime < :endTime AND b.endTime > :startTime)")
     List<ServiceBooking> findConflictingBookings(@Param("serviceId") Long serviceId, 
                                                  @Param("startTime") LocalDateTime startTime, 
                                                  @Param("endTime") LocalDateTime endTime);
                                                  
     // Lấy booking trong ngày để hiển thị lịch biểu
-    @Query("SELECT b FROM ServiceBooking b WHERE b.service.id = :serviceId AND b.status = 'CONFIRMED' " +
+    @Query("SELECT b FROM ServiceBooking b WHERE b.service.id = :serviceId AND (b.status = 'CONFIRMED' OR b.status = 'PENDING') " +
            "AND b.startTime >= :startOfDay AND b.startTime < :endOfDay ORDER BY b.startTime ASC")
     List<ServiceBooking> findConfirmedByDate(@Param("serviceId") Long serviceId,
                                              @Param("startOfDay") LocalDateTime startOfDay,

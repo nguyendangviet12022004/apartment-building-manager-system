@@ -27,6 +27,40 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   bool _isLoadingSchedule = false;
   bool _isSubmitting = false;
 
+  /// Tính toán tổng số lượng đã được đặt trong khung giờ đang chọn.
+  /// Nó sẽ quét qua các booking đã được xác nhận hoặc đang chờ duyệt.
+  int get _currentUsage {
+    final startDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _startTime.hour,
+      _startTime.minute,
+    );
+    final endDateTime = DateTime(
+      _selectedDate.year,
+      _selectedDate.month,
+      _selectedDate.day,
+      _endTime.hour,
+      _endTime.minute,
+    );
+
+    if (startDateTime.isAfter(endDateTime)) return 0;
+
+    int usage = 0;
+    for (var booking in _confirmedBookings) {
+      final bookingStart = DateTime.parse(booking['startTime']);
+      final bookingEnd = DateTime.parse(booking['endTime']);
+
+      // Kiểm tra xem booking có bị trùng lặp thời gian không
+      if (bookingStart.isBefore(endDateTime) &&
+          bookingEnd.isAfter(startDateTime)) {
+        usage += (booking['quantity'] as int? ?? 1);
+      }
+    }
+    return usage;
+  }
+
   @override
   void initState() {
     super.initState();
@@ -62,6 +96,7 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   Future<void> _submitBooking() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final now = DateTime.now();
     final startDateTime = DateTime(
       _selectedDate.year,
       _selectedDate.month,
@@ -76,6 +111,21 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
       _endTime.hour,
       _endTime.minute,
     );
+
+    // --- VALIDATION LOGIC ---
+    if (startDateTime.isBefore(now)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Không thể đặt chỗ trong quá khứ')),
+      );
+      return;
+    }
+
+    if (endDateTime.difference(startDateTime).inMinutes < 60) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Thời gian đặt chỗ tối thiểu là 1 tiếng')),
+      );
+      return;
+    }
 
     if (startDateTime.isAfter(endDateTime)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -128,11 +178,18 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
   }
 
   Future<void> _selectDate(BuildContext context) async {
+    final now = DateTime.now();
+    // Tính ngày cuối cùng của tháng hiện tại
+    final lastDayOfMonth = DateTime(now.year, now.month + 1, 0);
+
     final DateTime? picked = await showDatePicker(
       context: context,
-      initialDate: _selectedDate,
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 30)),
+      initialDate:
+          (_selectedDate.isAfter(lastDayOfMonth) || _selectedDate.isBefore(now))
+          ? now
+          : _selectedDate,
+      firstDate: now,
+      lastDate: lastDayOfMonth,
     );
     if (picked != null && picked != _selectedDate) {
       setState(() {
@@ -149,16 +206,28 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
     );
     if (picked != null) {
       setState(() {
-        if (isStart)
+        if (isStart) {
           _startTime = picked;
-        else
+        } else {
           _endTime = picked;
+        }
+
+        // Sau khi đổi giờ, kiểm tra lại xem số lượng hiện tại có hợp lệ không.
+        // Nếu không, reset về 1 hoặc giá trị tối đa cho phép.
+        final remaining = widget.service.capacity - _currentUsage;
+        if (_quantity > remaining) {
+          _quantity = remaining > 0 ? remaining : 1;
+        }
       });
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    // Tính toán số chỗ còn lại và khả năng tăng số lượng
+    final int remainingCapacity = widget.service.capacity - _currentUsage;
+    final bool canIncrease = _quantity < remainingCapacity;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9FAFB),
       appBar: AppBar(
@@ -344,18 +413,30 @@ class _CreateBookingsScreenState extends State<CreateBookingsScreen> {
                       if (_quantity > 1) _quantity--;
                     }),
                   ),
-                  Text(
-                    '$_quantity',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 16.0),
+                    child: Text(
+                      '$_quantity',
+                      style: const TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   IconButton(
                     icon: const Icon(Icons.add_circle_outline),
-                    onPressed: () => setState(() {
-                      if (_quantity < 20) _quantity++;
-                    }),
+                    // Nút bị vô hiệu hóa nếu không thể tăng số lượng
+                    onPressed: canIncrease
+                        ? () => setState(() {
+                            _quantity++;
+                          })
+                        : null,
+                  ),
+                  const Spacer(),
+                  // Hiển thị số chỗ còn lại
+                  Text(
+                    'Còn lại: $remainingCapacity / ${widget.service.capacity}',
+                    style: TextStyle(color: Colors.grey.shade600),
                   ),
                 ],
               ),

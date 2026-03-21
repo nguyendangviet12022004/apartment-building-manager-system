@@ -62,8 +62,8 @@ public class ServiceBookingController {
         int requestedQty = req.quantity != null ? req.quantity : 1;
 
         if (currentUsage + requestedQty > service.getCapacity()) {
-            return ResponseEntity.badRequest().body("Service is fully booked for this time slot. " +
-                    "Remaining capacity: " + (service.getCapacity() - currentUsage));
+            int remaining = Math.max(0, service.getCapacity() - currentUsage);
+            return ResponseEntity.badRequest().body("Không thể đặt chỗ: Chỉ còn " + remaining + " chỗ trống trong khung giờ này.");
         }
 
         // 3. Validate Apartment (Resident)

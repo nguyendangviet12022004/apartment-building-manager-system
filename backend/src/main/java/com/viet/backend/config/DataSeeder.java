@@ -29,10 +29,9 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println(">> DataSeeder: Skipped schema update (Error or not MySQL: " + e.getMessage() + ")");
         }
 
-        // Seed thêm nếu dữ liệu còn ít (< 25 service) hoặc để update lại type cho đúng
-        if (serviceRepository.count() < 25) {
-            seedServices();
-        }
+        // Luôn chạy seeder để đảm bảo các dịch vụ cơ bản được cập nhật đúng (bao gồm cả capacity).
+        // Logic bên trong seedServices sẽ tự xử lý việc tạo mới hoặc cập nhật.
+        seedServices();
     }
 
     private void seedServices() {

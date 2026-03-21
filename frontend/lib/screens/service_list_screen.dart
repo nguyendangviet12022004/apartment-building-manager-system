@@ -269,9 +269,12 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                           fontSize: 14,
                         ),
                       ),
-                      const Text(
-                        'Slot: 5/20', // Mock data
-                        style: TextStyle(color: Colors.black54, fontSize: 12),
+                      Text(
+                        'Capacity: ${item.capacity}',
+                        style: const TextStyle(
+                          color: Colors.black54,
+                          fontSize: 12,
+                        ),
                       ),
                     ],
                   ),
