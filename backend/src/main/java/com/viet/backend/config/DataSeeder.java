@@ -82,6 +82,7 @@ public class DataSeeder implements CommandLineRunner {
                 dbService.setUnit(s.getUnit());
                 dbService.setUnitPrice(s.getUnitPrice());
                 dbService.setMetered(s.isMetered());
+                dbService.setCapacity(s.getCapacity());
                 serviceRepository.save(dbService);
             } else {
                 serviceRepository.save(s);
@@ -99,7 +100,7 @@ public class DataSeeder implements CommandLineRunner {
                 .serviceType(type)
                 .metered(type == ServiceType.METERED)
                 .active(true)
-                .capacity(type == ServiceType.AMENITY ? 5 : 1) // Mặc định amenity có capacity là 5 để test logic
+                .capacity(10)
                 .build();
     }
 }
