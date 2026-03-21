@@ -390,10 +390,7 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
           Container(
             width: 8,
             height: 8,
-            decoration: BoxDecoration(
-              color: textColor,
-              shape: BoxShape.circle,
-            ),
+            decoration: BoxDecoration(color: textColor, shape: BoxShape.circle),
           ),
           const SizedBox(width: 6),
           Text(
@@ -411,7 +408,6 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
   }
 
   Widget _buildApartmentCard(Map<String, dynamic> apt) {
-
     // Fallback if area is null or different format
     final dynamic areaRaw = apt['area'];
     final String areaStr = areaRaw != null ? areaRaw.toString() : '0.0';
@@ -530,6 +526,6 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
           ],
         ),
       ),
-    ));
+    );
   }
 }
