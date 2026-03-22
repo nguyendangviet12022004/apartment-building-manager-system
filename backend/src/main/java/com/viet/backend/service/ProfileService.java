@@ -62,6 +62,10 @@ public class ProfileService {
                 .orElse(Resident.builder().user(user).build());
 
         if (req.getIdentityCard() != null) {
+            Optional<Resident> existingWithId = residentRepository.findByIdentityCard(req.getIdentityCard());
+            if (existingWithId.isPresent() && !existingWithId.get().getUser().getId().equals(userId)) {
+                throw new jakarta.persistence.EntityExistsException("Identity Card already exists in the system.");
+            }
             resident.setIdentityCard(req.getIdentityCard());
         }
         

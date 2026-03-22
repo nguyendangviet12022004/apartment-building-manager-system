@@ -365,6 +365,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
       iconColor: const Color(0xFF00BCD4),
       children: [
         _buildInfoRow('Account ID', _profile?.accountId ?? 'N/A'),
+        _buildInfoRow('Identity Card', _profile?.identityCard ?? 'Not set'),
         _buildInfoRow('Date of Birth', _profile?.dateOfBirth ?? 'Not set'),
         _buildInfoRow('Gender', _profile?.gender ?? 'Not set'),
       ],

@@ -44,7 +44,14 @@ class ProfileService {
     if (response.statusCode == 200) {
       return ProfileModel.fromJson(jsonDecode(response.body));
     } else {
-      throw Exception('Failed to update profile: ${response.body}');
+      String errorMessage = 'Failed to update profile';
+      try {
+        final errorBody = jsonDecode(response.body);
+        if (errorBody['message'] != null) {
+          errorMessage = errorBody['message'];
+        }
+      } catch (_) {}
+      throw Exception(errorMessage);
     }
   }
 }
