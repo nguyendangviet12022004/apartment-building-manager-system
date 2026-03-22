@@ -258,7 +258,7 @@ class Body extends StatelessWidget {
   // 👇 Invoice route thay đổi từ AppRoutes.createInvoice → AppRoutes.invoiceList
   static const _row1 = [
     (Icons.receipt_long, 'Invoice', AppRoutes.invoiceList), // ← updated
-    (Icons.spa_outlined, 'Amenity', null),
+    (Icons.spa_outlined, 'Amenity', AppRoutes.bookingRequests), // ← updated
     (Icons.newspaper, 'News', null),
     (Icons.bar_chart, 'Report', null),
     (Icons.people_outline, 'Resident', AppRoutes.residentManagement),
