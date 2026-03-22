@@ -4,7 +4,12 @@ class ServiceModel {
   final String? unit;
   final double unitPrice;
   final String? description;
-  final String serviceType; // METERED, FIXED, PARKING
+  final String serviceType;
+  final bool metered;
+  final bool active;
+  final int capacity;
+  final String? openingTime;
+  final String? closingTime;
 
   ServiceModel({
     required this.id,
@@ -13,16 +18,30 @@ class ServiceModel {
     required this.unitPrice,
     this.description,
     required this.serviceType,
+    required this.metered,
+    required this.active,
+    required this.capacity,
+    this.openingTime,
+    this.closingTime,
   });
 
-  bool get isFixed => serviceType == 'FIXED';
+  factory ServiceModel.fromJson(Map<String, dynamic> json) {
+    return ServiceModel(
+      id: json['id'],
+      serviceName: json['serviceName'],
+      unit: json['unit'],
+      unitPrice: (json['unitPrice'] as num).toDouble(),
+      description: json['description'],
+      serviceType: json['serviceType'],
+      metered: json['metered'] ?? false,
+      active: json['active'] ?? true,
+      capacity: json['capacity'] ?? 1,
+      openingTime: json['openingTime'],
+      closingTime: json['closingTime'],
+    );
+  }
 
-  factory ServiceModel.fromJson(Map<String, dynamic> json) => ServiceModel(
-    id: json['id'],
-    serviceName: json['serviceName'] ?? '',
-    unit: json['unit'],
-    unitPrice: (json['unitPrice'] ?? 0).toDouble(),
-    description: json['description'],
-    serviceType: json['serviceType'] ?? 'METERED',
-  );
+  bool get isFixed {
+    return serviceType == 'FIXED';
+  }
 }

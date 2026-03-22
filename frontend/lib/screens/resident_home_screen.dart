@@ -5,6 +5,7 @@ import '../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/bills_page.dart';
+import 'service_list_screen.dart';
 import '../screens/payment_history_screen.dart';
 
 class ResidentHomeScreen extends StatelessWidget {
@@ -89,7 +90,7 @@ class Body extends StatelessWidget {
               CircleAvatar(
                 radius: 24,
                 backgroundImage: const NetworkImage(
-                  'https://via.placeholder.com/48.png', 
+                  'https://via.placeholder.com/48.png',
                 ),
                 backgroundColor: Colors.white24,
               ),
@@ -120,10 +121,7 @@ class Body extends StatelessWidget {
               ),
               const Icon(Icons.qr_code_2, color: Colors.white, size: 28),
               const SizedBox(width: 12),
-              const NotificationBell(
-                iconColor: Colors.white,
-                iconSize: 28,
-              ),
+              const NotificationBell(iconColor: Colors.white, iconSize: 28),
             ],
           ),
           const SizedBox(height: 20),
@@ -583,11 +581,60 @@ class Body extends StatelessWidget {
                   if (item.$2 == 'Home') {
                     // Already on Home
                   } else if (item.$2 == 'Services') {
-                    _onActionTap(context, null, item.$2);
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const ServiceListScreen(),
+                      ),
+                    );
                   } else if (item.$2 == 'Invoices') {
                     _onActionTap(context, AppRoutes.bills, item.$2);
                   } else if (item.$2 == 'Profile') {
-                    Navigator.pushNamed(context, AppRoutes.profile);
+                    showModalBottomSheet(
+                      context: context,
+                      builder: (context) => SafeArea(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: const Icon(
+                                Icons.person,
+                                color: Colors.blueAccent,
+                              ),
+                              title: const Text('Change Password'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.changePassword,
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.logout,
+                                color: Colors.redAccent,
+                              ),
+                              title: const Text(
+                                'Logout',
+                                style: TextStyle(color: Colors.redAccent),
+                              ),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                await context.read<AuthProvider>().logout();
+                                if (context.mounted) {
+                                  Navigator.pushNamedAndRemoveUntil(
+                                    context,
+                                    AppRoutes.login,
+                                    (route) => false,
+                                  );
+                                }
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
                   }
                 },
                 child: Column(

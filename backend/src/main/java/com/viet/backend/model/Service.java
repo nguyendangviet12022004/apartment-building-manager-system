@@ -1,8 +1,11 @@
 package com.viet.backend.model;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import jakarta.persistence.*;
 import lombok.*;
 import java.math.BigDecimal;
+import java.time.LocalTime;
 
 @Entity
 @Table(name = "services")
@@ -10,6 +13,7 @@ import java.math.BigDecimal;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Service {
 
     @Id
@@ -41,9 +45,20 @@ public class Service {
     @Builder.Default
     private boolean active = true;    // soft-delete / disable unused services
 
+    @Column(nullable = false)
+    @Builder.Default
+    private Integer capacity = 1;     // Sức chứa tối đa cùng một thời điểm (VD: 1 sân tennis, 20 slot hồ bơi)
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime openingTime;
+
+    @JsonFormat(pattern = "HH:mm:ss")
+    private LocalTime closingTime;
+
     public enum ServiceType {
         METERED,   // điện, nước → quantity × unitPrice
         FIXED,     // quản lí, vệ sinh → unitPrice là tổng cố định
-        PARKING    // xe → quantity (số xe) × unitPrice
+        PARKING,    // xe → quantity (số xe) × unitPrice
+        AMENITY     // tiện ích khác → quantity × unitPrice
     }
 }
