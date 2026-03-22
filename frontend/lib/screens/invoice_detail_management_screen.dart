@@ -1,10 +1,12 @@
 // lib/screens/invoice_detail_management_screen.dart
 
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../models/manager_invoice_model.dart';
 import '../models/invoice_model.dart';
 import '../services/manager_invoice_service.dart';
+import '../services/reminder_service.dart';
 
 class InvoiceDetailManagementScreen extends StatefulWidget {
   final int apartmentId;
@@ -31,10 +33,18 @@ class _InvoiceDetailManagementScreenState
   static const _paidGreen = Color(0xFF16A34A);
 
   final _service = ManagerInvoiceService();
+  bool _deleting = false;
 
   ManagerDetail? _detail;
   bool _loading = true;
   String? _error;
+
+  // Reminder
+  final _reminderService = ReminderService();
+  StreamSubscription<ReminderResult>? _sseSub;
+  bool _sending = false;
+  ReminderResult? _lastResult;
+  Timer? _sendingTimeout;
 
   // Reminder toggles
   final Map<String, bool> _channels = {
@@ -47,6 +57,44 @@ class _InvoiceDetailManagementScreenState
   void initState() {
     super.initState();
     _load();
+    _subscribeSse();
+  }
+
+  void _subscribeSse() {
+    _sseSub = _reminderService.subscribeResults().listen(
+      (result) {
+        if (!mounted) return;
+        _sendingTimeout?.cancel();
+        setState(() {
+          _lastResult = result;
+          _sending = false;
+        });
+        _showResultSnackbar(result);
+      },
+      onError: (e) {
+        debugPrint('SSE error: $e');
+        // Reconnect tự động được xử lý trong ReminderService
+      },
+      onDone: () => debugPrint('SSE stream done'),
+      cancelOnError: false, // Không huỷ stream khi gặp lỗi → cho phép reconnect
+    );
+  }
+
+  void _showResultSnackbar(ReminderResult result) {
+    final msg = result.anySuccess
+        ? 'Reminder sent to ${result.residentName} · ${result.summary}'
+        : 'Failed: ${result.pushError ?? result.emailError ?? 'Unknown error'}';
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(msg),
+        backgroundColor: result.anySuccess
+            ? const Color(0xFF16A34A)
+            : const Color(0xFFEF4444),
+        behavior: SnackBarBehavior.floating,
+        duration: const Duration(seconds: 4),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
   }
 
   Future<void> _load() async {
@@ -72,42 +120,68 @@ class _InvoiceDetailManagementScreenState
       body: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.dark,
         child: SafeArea(
-          child: Column(
+          child: Stack(
             children: [
-              _buildHeader(),
-              Expanded(
-                child: _loading
-                    ? const Center(
-                        child: CircularProgressIndicator(color: _accent),
-                      )
-                    : _error != null
-                    ? _buildErrorState()
-                    : RefreshIndicator(
-                        color: _accent,
-                        onRefresh: _load,
-                        child: SingleChildScrollView(
-                          padding: const EdgeInsets.all(16),
-                          child: Column(
-                            children: [
-                              _buildResidentCard(),
-                              const SizedBox(height: 12),
-                              _buildContractPeriod(),
-                              const SizedBox(height: 12),
-                              if (_detail!.outstandingInvoices.isNotEmpty)
-                                _buildOutstandingSection(),
-                              if (_detail!.outstandingInvoices.isNotEmpty)
-                                const SizedBox(height: 12),
-                              if (_detail!.paidInvoices.isNotEmpty)
-                                _buildPaidSection(),
-                              if (_detail!.paidInvoices.isNotEmpty)
-                                const SizedBox(height: 12),
-                              _buildSendReminderSection(),
-                              const SizedBox(height: 24),
-                            ],
+              Column(
+                children: [
+                  _buildHeader(),
+                  Expanded(
+                    child: _loading
+                        ? const Center(
+                            child: CircularProgressIndicator(color: _accent),
+                          )
+                        : _error != null
+                        ? _buildErrorState()
+                        : RefreshIndicator(
+                            color: _accent,
+                            onRefresh: _load,
+                            child: SingleChildScrollView(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                children: [
+                                  _buildResidentCard(),
+                                  const SizedBox(height: 12),
+                                  _buildContractPeriod(),
+                                  const SizedBox(height: 12),
+                                  if (_detail!.outstandingInvoices.isNotEmpty)
+                                    _buildOutstandingSection(),
+                                  if (_detail!.outstandingInvoices.isNotEmpty)
+                                    const SizedBox(height: 12),
+                                  if (_detail!.paidInvoices.isNotEmpty)
+                                    _buildPaidSection(),
+                                  if (_detail!.paidInvoices.isNotEmpty)
+                                    const SizedBox(height: 12),
+                                  _buildSendReminderSection(),
+                                  const SizedBox(height: 24),
+                                ],
+                              ),
+                            ),
+                          ),
+                  ),
+                ],
+              ),
+              // Deleting overlay
+              if (_deleting)
+                Container(
+                  color: Colors.black45,
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        CircularProgressIndicator(color: Colors.white),
+                        SizedBox(height: 14),
+                        Text(
+                          'Deleting invoice...',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w500,
                           ),
                         ),
-                      ),
-              ),
+                      ],
+                    ),
+                  ),
+                ),
             ],
           ),
         ),
@@ -312,7 +386,7 @@ class _InvoiceDetailManagementScreenState
             final isLast = i == invoices.length - 1;
             return Column(
               children: [
-                _InvoiceRowItem(invoice: inv),
+                _buildInvoiceRow(inv, canEdit: true),
                 if (!isLast)
                   const Divider(height: 20, color: Color(0xFFE5E7EB)),
               ],
@@ -360,7 +434,7 @@ class _InvoiceDetailManagementScreenState
             final isLast = i == invoices.length - 1;
             return Column(
               children: [
-                _InvoiceRowItem(invoice: inv),
+                _buildInvoiceRow(inv, canEdit: false),
                 if (!isLast)
                   const Divider(height: 16, color: Color(0xFFE5E7EB)),
               ],
@@ -489,36 +563,50 @@ class _InvoiceDetailManagementScreenState
           SizedBox(
             width: double.infinity,
             child: GestureDetector(
-              onTap: _sendReminder,
-              child: Container(
+              onTap: _sending ? null : _sendReminder,
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 150),
                 padding: const EdgeInsets.symmetric(vertical: 15),
                 decoration: BoxDecoration(
-                  color: _accent,
+                  color: _sending ? _gray : _accent,
                   borderRadius: BorderRadius.circular(14),
-                  boxShadow: [
-                    BoxShadow(
-                      color: _accent.withOpacity(0.35),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
-                    ),
-                  ],
+                  boxShadow: _sending
+                      ? []
+                      : [
+                          BoxShadow(
+                            color: _accent.withOpacity(0.35),
+                            blurRadius: 12,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.send_rounded, color: _white, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Send Reminder Now',
-                      style: TextStyle(
-                        color: _white,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.3,
+                child: _sending
+                    ? const Center(
+                        child: SizedBox(
+                          width: 22,
+                          height: 22,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        ),
+                      )
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.send_rounded, color: _white, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Send Reminder Now',
+                            style: TextStyle(
+                              color: _white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
               ),
             ),
           ),
@@ -527,17 +615,424 @@ class _InvoiceDetailManagementScreenState
     );
   }
 
-  void _sendReminder() {
-    final channels = _channels.entries
-        .where((e) => e.value)
-        .map((e) => e.key)
-        .join(', ');
+  Future<void> _sendReminder() async {
+    if (_sending || _detail == null) return;
+    final sendPush = _channels['Push Notification'] ?? false;
+    final sendEmail = _channels['Email'] ?? false;
+    if (!sendPush && !sendEmail) {
+      _showSnack('Please select at least one channel', isError: true);
+      return;
+    }
+
+    setState(() {
+      _sending = true;
+      _lastResult = null;
+    });
+
+    // Timeout 15s: nếu SSE không về (mất kết nối, managerId sai...)
+    // tự reset _sending để UI không bị kẹt
+    _sendingTimeout?.cancel();
+    _sendingTimeout = Timer(const Duration(seconds: 15), () {
+      if (mounted && _sending) {
+        setState(() => _sending = false);
+        _showSnack(
+          'No response from server — check result manually',
+          isError: true,
+        );
+      }
+    });
+
+    try {
+      await _reminderService.sendReminder(
+        apartmentId: _detail!.apartmentId,
+        sendPush: sendPush,
+        sendEmail: sendEmail,
+      );
+      if (!mounted) return;
+      _showSnack('Reminder queued, waiting for result...');
+    } catch (e) {
+      _sendingTimeout?.cancel();
+      if (mounted) {
+        setState(() => _sending = false);
+        _showSnack('Error: $e', isError: true);
+      }
+    }
+  }
+
+  // ── Invoice Row with Edit / Delete ────────────────────────────────────────
+  Widget _buildInvoiceRow(Invoice inv, {required bool canEdit}) {
+    final Color statusColor;
+    final String statusLabel;
+    switch (inv.status) {
+      case InvoiceStatus.overdue:
+        statusColor = _overdueRed;
+        statusLabel = 'Overdue';
+        break;
+      case InvoiceStatus.paid:
+        statusColor = _paidGreen;
+        statusLabel = 'Paid';
+        break;
+      default:
+        statusColor = _unpaidAmber;
+        statusLabel = 'Unpaid';
+    }
+
+    return Row(
+      children: [
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                inv.invoiceCode,
+                style: const TextStyle(fontSize: 11, color: _gray),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                inv.monthLabel,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: _black,
+                ),
+              ),
+            ],
+          ),
+        ),
+        Column(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Text(
+              '${_fmtVnd(inv.total.toInt())}đ',
+              style: const TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w700,
+                color: _black,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+              decoration: BoxDecoration(
+                color: statusColor.withOpacity(0.12),
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                statusLabel,
+                style: TextStyle(
+                  fontSize: 10,
+                  fontWeight: FontWeight.w600,
+                  color: statusColor,
+                ),
+              ),
+            ),
+          ],
+        ),
+        if (canEdit) ...[
+          const SizedBox(width: 8),
+          PopupMenuButton<String>(
+            icon: const Icon(Icons.more_vert_rounded, size: 18, color: _gray),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            onSelected: (v) {
+              if (v == 'edit') _showEditDialog(inv);
+              if (v == 'delete') _confirmDelete(inv);
+            },
+            itemBuilder: (_) => [
+              PopupMenuItem(
+                value: 'edit',
+                child: Row(
+                  children: [
+                    const Icon(Icons.edit_outlined, size: 16, color: _accent),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Edit',
+                      style: TextStyle(
+                        color: _accent,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuItem(
+                value: 'delete',
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.delete_outline_rounded,
+                      size: 16,
+                      color: _overdueRed,
+                    ),
+                    const SizedBox(width: 8),
+                    const Text(
+                      'Delete',
+                      style: TextStyle(
+                        color: _overdueRed,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ],
+    );
+  }
+
+  // ── Edit Invoice Dialog ────────────────────────────────────────────────────
+  Future<void> _showEditDialog(Invoice inv) async {
+    final dueDateCtrl = TextEditingController(
+      text: inv.dueDate != null
+          ? '${inv.dueDate!.day.toString().padLeft(2, '0')}/'
+                '${inv.dueDate!.month.toString().padLeft(2, '0')}/'
+                '${inv.dueDate!.year}'
+          : '',
+    );
+    final lateFeeCtrl = TextEditingController(
+      text: inv.lateFee.toInt().toString(),
+    );
+    DateTime? pickedDate = inv.dueDate;
+
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Edit Invoice',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+              ),
+              Text(
+                inv.invoiceCode,
+                style: const TextStyle(
+                  fontSize: 11,
+                  color: _gray,
+                  fontWeight: FontWeight.w400,
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Due Date picker
+              GestureDetector(
+                onTap: () async {
+                  final d = await showDatePicker(
+                    context: ctx,
+                    initialDate: pickedDate ?? DateTime.now(),
+                    firstDate: DateTime(2020),
+                    lastDate: DateTime(2030),
+                    builder: (ctx, child) => Theme(
+                      data: Theme.of(ctx).copyWith(
+                        colorScheme: const ColorScheme.light(primary: _accent),
+                      ),
+                      child: child!,
+                    ),
+                  );
+                  if (d != null) {
+                    setDialogState(() {
+                      pickedDate = d;
+                      dueDateCtrl.text =
+                          '${d.day.toString().padLeft(2, '0')}/'
+                          '${d.month.toString().padLeft(2, '0')}/${d.year}';
+                    });
+                  }
+                },
+                child: AbsorbPointer(
+                  child: TextField(
+                    controller: dueDateCtrl,
+                    decoration: InputDecoration(
+                      labelText: 'Due Date',
+                      labelStyle: const TextStyle(color: _gray),
+                      suffixIcon: const Icon(
+                        Icons.calendar_today_rounded,
+                        size: 16,
+                        color: _accent,
+                      ),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(color: _accent),
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              // Late Fee
+              TextField(
+                controller: lateFeeCtrl,
+                keyboardType: TextInputType.number,
+                decoration: InputDecoration(
+                  labelText: 'Late Fee (đ)',
+                  labelStyle: const TextStyle(color: _gray),
+                  suffixText: 'đ',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: const BorderSide(color: _accent),
+                  ),
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Cancel', style: TextStyle(color: _gray)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _accent,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+              ),
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text(
+                'Save',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+    if (pickedDate == null) return;
+
+    final lateFee = double.tryParse(lateFeeCtrl.text) ?? 0;
+
+    try {
+      await _service.editInvoice(
+        inv.id,
+        dueDate: pickedDate!,
+        lateFee: lateFee,
+        status: inv.status.name.toUpperCase(),
+        items: [], // empty = keep existing items on BE
+      );
+      _showSnack('Invoice updated');
+      await _load();
+    } catch (e) {
+      _showSnack('Update failed: $e', isError: true);
+    }
+  }
+
+  // ── Confirm Delete ─────────────────────────────────────────────────────────
+  Future<void> _confirmDelete(Invoice inv) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text(
+          'Delete Invoice?',
+          style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Invoice: ${inv.invoiceCode}',
+              style: const TextStyle(fontWeight: FontWeight.w600),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'Amount: ${_fmtVnd(inv.total.toInt())}đ',
+              style: const TextStyle(color: _gray, fontSize: 13),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _overdueRed.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: const Row(
+                children: [
+                  Icon(
+                    Icons.warning_amber_rounded,
+                    size: 14,
+                    color: _overdueRed,
+                  ),
+                  SizedBox(width: 6),
+                  Expanded(
+                    child: Text(
+                      'This action cannot be undone.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: _overdueRed,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel', style: TextStyle(color: _gray)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _overdueRed,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Delete',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed != true || !mounted) return;
+
+    setState(() => _deleting = true);
+    try {
+      await _service.deleteInvoice(inv.id);
+      _showSnack('Invoice deleted');
+      await _load(); // reload — invoice sẽ biến mất khỏi list
+    } catch (e) {
+      _showSnack('Delete failed: $e', isError: true);
+    } finally {
+      if (mounted) setState(() => _deleting = false);
+    }
+  }
+
+  void _showSnack(String msg, {bool isError = false}) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(
-          'Reminder sent to ${_detail?.residentName ?? ''} via $channels',
-        ),
-        backgroundColor: _accent,
+        content: Text(msg),
+        backgroundColor: isError ? _overdueRed : _paidGreen,
         behavior: SnackBarBehavior.floating,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
@@ -647,100 +1142,6 @@ class _SectionHeader extends StatelessWidget {
         ),
       ],
     );
-  }
-}
-
-class _InvoiceRowItem extends StatelessWidget {
-  final Invoice invoice;
-  const _InvoiceRowItem({required this.invoice});
-
-  static const _overdueRed = Color(0xFFEF4444);
-  static const _unpaidAmber = Color(0xFFF59E0B);
-  static const _paidGreen = Color(0xFF16A34A);
-  static const _gray = Color(0xFF9CA3AF);
-  static const _black = Color(0xFF000000);
-
-  @override
-  Widget build(BuildContext context) {
-    final Color statusColor;
-    final String statusLabel;
-    switch (invoice.status) {
-      case InvoiceStatus.overdue:
-        statusColor = _overdueRed;
-        statusLabel = 'Overdue';
-        break;
-      case InvoiceStatus.paid:
-        statusColor = _paidGreen;
-        statusLabel = 'Paid';
-        break;
-      default:
-        statusColor = _unpaidAmber;
-        statusLabel = 'Unpaid';
-    }
-
-    return Row(
-      children: [
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                invoice.invoiceCode,
-                style: const TextStyle(fontSize: 11, color: _gray),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                invoice.monthLabel,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w700,
-                  color: _black,
-                ),
-              ),
-            ],
-          ),
-        ),
-        Column(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text(
-              '${_fmt(invoice.total.toInt())}đ',
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w700,
-                color: _black,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-              decoration: BoxDecoration(
-                color: statusColor.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(6),
-              ),
-              child: Text(
-                statusLabel,
-                style: TextStyle(
-                  fontSize: 10,
-                  fontWeight: FontWeight.w600,
-                  color: statusColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  String _fmt(int v) {
-    final s = v.toString();
-    final buf = StringBuffer();
-    for (int i = 0; i < s.length; i++) {
-      if (i > 0 && (s.length - i) % 3 == 0) buf.write('.');
-      buf.write(s[i]);
-    }
-    return buf.toString();
   }
 }
 

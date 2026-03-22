@@ -117,6 +117,67 @@ public class InvoiceService {
     }
 
     @Transactional
+    public InvoiceDTO.Response update(Long id, InvoiceDTO.Request req) {
+        Invoice invoice = invoiceRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Invoice not found: " + id));
+
+        // Chỉ cho phép edit khi chưa PAID
+        if (invoice.getStatus() == InvoiceStatus.PAID) {
+            throw new IllegalStateException("Cannot edit a paid invoice");
+        }
+
+        // Cập nhật các field cơ bản
+        if (req.getDueDate()    != null) invoice.setDueDate(req.getDueDate());
+        if (req.getInvoiceDate()!= null) invoice.setInvoiceDate(req.getInvoiceDate());
+        if (req.getLateFee()    != null) invoice.setLateFee(req.getLateFee());
+        if (req.getStatus()     != null) invoice.setStatus(req.getStatus());
+
+        // Rebuild items nếu có gửi lên
+        if (req.getItems() != null && !req.getItems().isEmpty()) {
+            invoice.getItems().clear();
+
+            List<InvoiceItem> newItems = new ArrayList<>();
+            BigDecimal subtotal = BigDecimal.ZERO;
+
+            for (InvoiceDTO.ItemRequest itemReq : req.getItems()) {
+                com.viet.backend.model.Service svc = serviceRepository.findById(itemReq.getServiceId())
+                        .orElseThrow(() -> new RuntimeException("Service not found: " + itemReq.getServiceId()));
+
+                BigDecimal quantity;
+                BigDecimal amount;
+
+                if (svc.getServiceType() == ServiceType.FIXED) {
+                    quantity = BigDecimal.ONE;
+                    amount   = svc.getUnitPrice();
+                } else {
+                    quantity = itemReq.getQuantity() != null ? itemReq.getQuantity() : BigDecimal.ZERO;
+                    amount   = quantity.multiply(svc.getUnitPrice());
+                }
+
+                InvoiceItem item = InvoiceItem.builder()
+                        .invoice(invoice)
+                        .service(svc)
+                        .serviceName(svc.getServiceName())
+                        .unit(svc.getUnit())
+                        .quantity(quantity)
+                        .unitPrice(svc.getUnitPrice())
+                        .amount(amount)
+                        .build();
+
+                newItems.add(item);
+                subtotal = subtotal.add(amount);
+            }
+
+            invoice.getItems().addAll(newItems);
+            BigDecimal lateFee = invoice.getLateFee() != null ? invoice.getLateFee() : BigDecimal.ZERO;
+            invoice.setSubtotal(subtotal);
+            invoice.setTotal(subtotal.add(lateFee));
+        }
+
+        return toResponse(invoiceRepository.save(invoice));
+    }
+
+    @Transactional
     // Overload cho VNPay callback (nhận String thay vì DTO)
     public void updateStatus(long id, String statusStr) {
         var req = new InvoiceDTO.StatusUpdate();

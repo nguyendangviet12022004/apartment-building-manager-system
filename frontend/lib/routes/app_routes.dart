@@ -13,6 +13,7 @@ import '../screens/admin_request_screen.dart';
 import '../screens/bills_page.dart';
 import '../screens/create_invoice_page.dart';
 import '../screens/invoice_list_management_screen.dart';
+import '../screens/payment_history_screen.dart';
 import '../screens/request_detail_response_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/resident_management_screen.dart';
@@ -39,6 +40,7 @@ class AppRoutes {
   static const String bills = '/bills';
   static const String createInvoice = '/create-invoice';
   static const String invoiceList = '/invoice-list';
+  static const String paymentHistory = '/payment-history';
   static const String requestDetailResponse = '/admin/request-response';
 
   static const String addApartment = '/add-apartment';
