@@ -2,6 +2,8 @@ package com.viet.backend.controller;
 
 import com.viet.backend.dto.BookingDTO;
 import com.viet.backend.service.BookingManagementService;
+import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -50,5 +52,43 @@ public class BookingManagementController {
         
         BookingDTO.BookingDetailResponse response = bookingManagementService.getBookingDetails(bookingId);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * PUT /api/v1/bookings/{bookingId}/approve
+     * Approve a booking request
+     * Only accessible by MANAGER and ADMIN roles
+     */
+    @PutMapping("/{bookingId}/approve")
+//    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<?> approveBooking(@PathVariable Long bookingId) {
+        try {
+            bookingManagementService.approveBooking(bookingId);
+            return ResponseEntity.ok().body(new MessageResponse("Booking approved successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    /**
+     * PUT /api/v1/bookings/{bookingId}/reject
+     * Reject a booking request
+     * Only accessible by MANAGER and ADMIN roles
+     */
+    @PutMapping("/{bookingId}/reject")
+//    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<?> rejectBooking(@PathVariable Long bookingId) {
+        try {
+            bookingManagementService.rejectBooking(bookingId);
+            return ResponseEntity.ok().body(new MessageResponse("Booking rejected successfully"));
+        } catch (RuntimeException e) {
+            return ResponseEntity.badRequest().body(new MessageResponse(e.getMessage()));
+        }
+    }
+
+    @Data
+    @AllArgsConstructor
+    static class MessageResponse {
+        private String message;
     }
 }

@@ -616,27 +616,59 @@ class _BookingDetailScreenState extends State<BookingDetailScreen> {
     );
   }
 
-  void _approveBooking() {
-    // TODO: Implement approve booking API call
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Booking approved successfully'),
-        backgroundColor: Color(0xFF10B981),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.pop(context, true); // Return true to indicate refresh needed
+  void _approveBooking() async {
+    try {
+      await _bookingService.approveBooking(widget.bookingId);
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking approved successfully'),
+          backgroundColor: Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context, true); // Return true to indicate refresh needed
+    } catch (e) {
+      if (!mounted) return;
+      
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
-  void _rejectBooking() {
-    // TODO: Implement reject booking API call
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text('Booking rejected'),
-        backgroundColor: Color(0xFFEF4444),
-        behavior: SnackBarBehavior.floating,
-      ),
-    );
-    Navigator.pop(context, true); // Return true to indicate refresh needed
+  void _rejectBooking() async {
+    try {
+      await _bookingService.rejectBooking(widget.bookingId);
+      
+      if (!mounted) return;
+      
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Booking rejected'),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+      Navigator.pop(context, true); // Return true to indicate refresh needed
+    } catch (e) {
+      if (!mounted) return;
+      
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(errorMessage),
+          backgroundColor: Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 }

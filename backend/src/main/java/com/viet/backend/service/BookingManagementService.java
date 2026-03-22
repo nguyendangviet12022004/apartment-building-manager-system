@@ -2,14 +2,18 @@ package com.viet.backend.service;
 
 import com.viet.backend.dto.BookingDTO;
 import com.viet.backend.model.Apartment;
+import com.viet.backend.model.Notification;
 import com.viet.backend.model.ServiceBooking;
 import com.viet.backend.model.User;
+import com.viet.backend.repository.NotificationRepository;
 import com.viet.backend.repository.ServiceBookingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,6 +27,7 @@ import java.util.stream.Collectors;
 public class BookingManagementService {
 
     private final ServiceBookingRepository serviceBookingRepository;
+    private final NotificationRepository notificationRepository;
 
     /**
      * Get all bookings with filtering and pagination
@@ -218,5 +223,110 @@ public class BookingManagementService {
                 .status(booking.getStatus().name())
                 .createdAt(null)  // Add createdAt field to ServiceBooking entity if needed
                 .build();
+    }
+
+    /**
+     * Approve a booking request
+     * Checks for time conflicts before approving
+     */
+    @Transactional
+    public void approveBooking(Long bookingId) {
+        log.info("Attempting to approve booking ID: {}", bookingId);
+        
+        ServiceBooking booking = serviceBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        // Check if booking is in PENDING status
+        if (booking.getStatus() != ServiceBooking.BookingStatus.PENDING) {
+            throw new RuntimeException("Only PENDING bookings can be approved. Current status: " + booking.getStatus());
+        }
+        
+        // Check for time conflicts
+        List<ServiceBooking> conflicts = serviceBookingRepository.findConflictingBookings(
+                booking.getService().getId(),
+                booking.getStartTime(),
+                booking.getEndTime()
+        );
+        
+        // Filter out the current booking from conflicts
+        conflicts = conflicts.stream()
+                .filter(b -> !b.getId().equals(bookingId))
+                .filter(b -> b.getStatus() == ServiceBooking.BookingStatus.CONFIRMED)
+                .collect(Collectors.toList());
+        
+        if (!conflicts.isEmpty()) {
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+            String conflictTime = conflicts.get(0).getStartTime().format(formatter);
+            throw new RuntimeException("Time conflict detected. Another booking exists at " + conflictTime);
+        }
+        
+        // Update status to CONFIRMED
+        booking.setStatus(ServiceBooking.BookingStatus.CONFIRMED);
+        serviceBookingRepository.save(booking);
+        
+        log.info("Booking {} approved successfully", bookingId);
+        
+        // Send notification to resident
+        sendNotificationToResident(booking, true);
+    }
+
+    /**
+     * Reject a booking request
+     */
+    @Transactional
+    public void rejectBooking(Long bookingId) {
+        log.info("Attempting to reject booking ID: {}", bookingId);
+        
+        ServiceBooking booking = serviceBookingRepository.findById(bookingId)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+        
+        // Check if booking is in PENDING status
+        if (booking.getStatus() != ServiceBooking.BookingStatus.PENDING) {
+            throw new RuntimeException("Only PENDING bookings can be rejected. Current status: " + booking.getStatus());
+        }
+        
+        // Update status to REJECTED
+        booking.setStatus(ServiceBooking.BookingStatus.REJECTED);
+        serviceBookingRepository.save(booking);
+        
+        log.info("Booking {} rejected successfully", bookingId);
+        
+        // Send notification to resident
+        sendNotificationToResident(booking, false);
+    }
+
+    /**
+     * Send notification to resident about booking status update
+     */
+    private void sendNotificationToResident(ServiceBooking booking, boolean approved) {
+        try {
+            User user = booking.getApartment().getResident().getUser();
+            String serviceName = booking.getService().getServiceName();
+            DateTimeFormatter formatter = DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+            String bookingTime = booking.getStartTime().format(formatter);
+            
+            String title = approved 
+                    ? "Booking Approved" 
+                    : "Booking Rejected";
+            
+            String content = approved
+                    ? String.format("Your booking for %s on %s has been approved", serviceName, bookingTime)
+                    : String.format("Your booking for %s on %s has been rejected", serviceName, bookingTime);
+            
+            Notification notification = Notification.builder()
+                    .user(user)
+                    .title(title)
+                    .content(content)
+                    .detail(String.format("Booking ID: %d\nService: %s\nTime: %s", 
+                            booking.getId(), serviceName, bookingTime))
+                    .build();
+            
+            notificationRepository.save(notification);
+            log.info("Notification sent to user {} for booking {}", user.getId(), booking.getId());
+            
+        } catch (Exception e) {
+            log.error("Failed to send notification for booking {}: {}", booking.getId(), e.getMessage());
+            // Don't throw exception, notification failure shouldn't block the approval/rejection
+        }
     }
 }

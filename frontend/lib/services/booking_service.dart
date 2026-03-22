@@ -72,4 +72,52 @@ class BookingService {
       throw Exception('Unable to load booking details');
     }
   }
+
+  Future<void> approveBooking(int bookingId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/$bookingId/approve'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return;
+    } else if (response.statusCode == 400) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Cannot approve booking');
+    } else if (response.statusCode == 500) {
+      throw Exception('Internal System Error, please contact administrator');
+    } else {
+      throw Exception('Unable to approve booking');
+    }
+  }
+
+  Future<void> rejectBooking(int bookingId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    final response = await http.put(
+      Uri.parse('$baseUrl/$bookingId/reject'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return;
+    } else if (response.statusCode == 400) {
+      final data = jsonDecode(response.body);
+      throw Exception(data['message'] ?? 'Cannot reject booking');
+    } else if (response.statusCode == 500) {
+      throw Exception('Internal System Error, please contact administrator');
+    } else {
+      throw Exception('Unable to reject booking');
+    }
+  }
 }

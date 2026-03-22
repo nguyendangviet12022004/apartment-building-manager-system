@@ -144,23 +144,6 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 16),
-          // Filters button
-          OutlinedButton.icon(
-            onPressed: () {
-              // Show filter dialog
-            },
-            icon: const Icon(Icons.tune, size: 18),
-            label: const Text('Filters'),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF6B7280),
-              side: const BorderSide(color: Color(0xFFE5E7EB)),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(8),
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            ),
-          ),
         ],
       ),
     );
