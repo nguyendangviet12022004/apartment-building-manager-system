@@ -329,4 +329,99 @@ public class BookingManagementService {
             // Don't throw exception, notification failure shouldn't block the approval/rejection
         }
     }
+
+    /**
+     * Get bookings for calendar view
+     */
+    @Transactional(readOnly = true)
+    public BookingDTO.BookingCalendarResponse getCalendarBookings(BookingDTO.BookingCalendarRequest request) {
+        log.info("Fetching calendar bookings: viewType={}, date={}, startDate={}, endDate={}", 
+                request.getViewType(), request.getDate(), request.getStartDate(), request.getEndDate());
+
+        LocalDateTime startDateTime;
+        LocalDateTime endDateTime;
+        
+        // Determine date range based on view type
+        if ("DAY".equals(request.getViewType()) && request.getDate() != null) {
+            startDateTime = LocalDateTime.parse(request.getDate() + "T00:00:00");
+            endDateTime = startDateTime.plusDays(1);
+        } else if (request.getStartDate() != null && request.getEndDate() != null) {
+            startDateTime = LocalDateTime.parse(request.getStartDate() + "T00:00:00");
+            endDateTime = LocalDateTime.parse(request.getEndDate() + "T23:59:59");
+        } else {
+            // Default to today
+            startDateTime = LocalDateTime.now().withHour(0).withMinute(0).withSecond(0);
+            endDateTime = startDateTime.plusDays(1);
+        }
+        
+        // Get all CONFIRMED bookings in the date range
+        List<ServiceBooking> bookings = serviceBookingRepository.findAll().stream()
+                .filter(b -> b.getStatus() == ServiceBooking.BookingStatus.CONFIRMED)
+                .filter(b -> b.getStartTime() != null && b.getEndTime() != null)
+                .filter(b -> !b.getStartTime().isBefore(startDateTime) && b.getStartTime().isBefore(endDateTime))
+                .collect(Collectors.toList());
+        
+        log.info("Found {} confirmed bookings in date range", bookings.size());
+        
+        // Map to calendar items
+        List<BookingDTO.CalendarBookingItem> calendarItems = bookings.stream()
+                .map(this::mapToCalendarItem)
+                .filter(item -> item != null)
+                .collect(Collectors.toList());
+        
+        return BookingDTO.BookingCalendarResponse.builder()
+                .bookings(calendarItems)
+                .totalScheduled(calendarItems.size())
+                .currentDate(startDateTime.toLocalDate().toString())
+                .viewType(request.getViewType() != null ? request.getViewType() : "DAY")
+                .build();
+    }
+
+    /**
+     * Map ServiceBooking to CalendarBookingItem
+     */
+    private BookingDTO.CalendarBookingItem mapToCalendarItem(ServiceBooking booking) {
+        try {
+            Apartment apartment = booking.getApartment();
+            User user = apartment != null && apartment.getResident() != null 
+                    ? apartment.getResident().getUser() 
+                    : null;
+            
+            if (user == null) {
+                return null;
+            }
+            
+            String residentName = (user.getFirstname() + " " + user.getLastname()).trim();
+            if (residentName.isEmpty()) {
+                residentName = user.getEmail();
+            }
+            
+            String serviceName = booking.getService() != null 
+                    ? booking.getService().getServiceName() 
+                    : "Unknown Service";
+            
+            String serviceIcon = determineServiceIcon(serviceName);
+            
+            // Format time slot
+            DateTimeFormatter timeFormatter = DateTimeFormatter.ofPattern("HH:mm");
+            String timeSlot = booking.getStartTime().format(timeFormatter) + " - " 
+                    + booking.getEndTime().format(timeFormatter);
+            
+            return BookingDTO.CalendarBookingItem.builder()
+                    .bookingId(booking.getId())
+                    .serviceName(serviceName)
+                    .serviceIcon(serviceIcon)
+                    .apartmentCode(apartment.getApartmentCode())
+                    .residentName(residentName)
+                    .startTime(booking.getStartTime())
+                    .endTime(booking.getEndTime())
+                    .timeSlot(timeSlot)
+                    .status(booking.getStatus().name())
+                    .build();
+                    
+        } catch (Exception e) {
+            log.error("Error mapping booking {} to calendar item: {}", booking.getId(), e.getMessage());
+            return null;
+        }
+    }
 }

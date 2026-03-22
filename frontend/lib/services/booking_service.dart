@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/booking_model.dart';
 import '../models/booking_detail_model.dart';
+import '../models/calendar_booking_model.dart';
 
 class BookingService {
   static const String baseUrl = 'http://10.0.2.2:8080/api/v1/bookings';
@@ -118,6 +119,48 @@ class BookingService {
       throw Exception('Internal System Error, please contact administrator');
     } else {
       throw Exception('Unable to reject booking');
+    }
+  }
+
+  Future<BookingCalendarResponse> getCalendarBookings({
+    String? date,
+    String? startDate,
+    String? endDate,
+    String viewType = 'DAY',
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+
+    final queryParams = <String, String>{
+      'viewType': viewType,
+    };
+
+    if (date != null) {
+      queryParams['date'] = date;
+    }
+    if (startDate != null) {
+      queryParams['startDate'] = startDate;
+    }
+    if (endDate != null) {
+      queryParams['endDate'] = endDate;
+    }
+
+    final uri = Uri.parse('$baseUrl/calendar').replace(queryParameters: queryParams);
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return BookingCalendarResponse.fromJson(jsonDecode(response.body));
+    } else if (response.statusCode == 500) {
+      throw Exception('Internal System Error, please contact administrator');
+    } else {
+      throw Exception('Unable to load calendar bookings');
     }
   }
 }

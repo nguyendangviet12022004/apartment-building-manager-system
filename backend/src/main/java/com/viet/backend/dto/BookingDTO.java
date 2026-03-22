@@ -57,6 +57,52 @@ public class BookingDTO {
     }
 
     /**
+     * Request DTO for calendar bookings
+     */
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookingCalendarRequest {
+        private String date;        // Format: yyyy-MM-dd (for day view)
+        private String startDate;   // Format: yyyy-MM-dd (for week/month view)
+        private String endDate;     // Format: yyyy-MM-dd (for week/month view)
+        private String viewType;    // DAY, WEEK, MONTH
+    }
+
+    /**
+     * Response DTO for calendar booking item
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class CalendarBookingItem {
+        private Long bookingId;
+        private String serviceName;
+        private String serviceIcon;
+        private String apartmentCode;
+        private String residentName;
+        private LocalDateTime startTime;
+        private LocalDateTime endTime;
+        private String timeSlot;    // e.g., "09:00 - 11:00 AM"
+        private String status;
+    }
+
+    /**
+     * Response DTO for calendar view
+     */
+    @Data
+    @Builder
+    @NoArgsConstructor
+    @AllArgsConstructor
+    public static class BookingCalendarResponse {
+        private List<CalendarBookingItem> bookings;
+        private int totalScheduled;
+        private String currentDate;
+        private String viewType;
+    }
+
+    /**
      * Response DTO for booking details
      */
     @Data

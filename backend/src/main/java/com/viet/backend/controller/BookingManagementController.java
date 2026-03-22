@@ -86,6 +86,27 @@ public class BookingManagementController {
         }
     }
 
+    /**
+     * GET /api/v1/bookings/calendar
+     * Get bookings for calendar view (only CONFIRMED bookings)
+     * Only accessible by MANAGER and ADMIN roles
+     */
+    @GetMapping("/calendar")
+//    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<BookingDTO.BookingCalendarResponse> getCalendarBookings(
+            @RequestParam(required = false) String date,
+            @RequestParam(required = false) String startDate,
+            @RequestParam(required = false) String endDate,
+            @RequestParam(defaultValue = "DAY") String viewType) {
+
+        BookingDTO.BookingCalendarRequest request = new BookingDTO.BookingCalendarRequest(
+                date, startDate, endDate, viewType
+        );
+
+        BookingDTO.BookingCalendarResponse response = bookingManagementService.getCalendarBookings(request);
+        return ResponseEntity.ok(response);
+    }
+
     @Data
     @AllArgsConstructor
     static class MessageResponse {
