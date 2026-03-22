@@ -22,6 +22,17 @@ public class FirebaseConfig {
     public void initialize() {
         try {
             if (FirebaseApp.getApps().isEmpty()) {
+                // Check if config file exists
+                java.io.File configFile = new java.io.File(configPath);
+                if (!configFile.exists() && !configPath.startsWith("classpath:")) {
+                    System.out.println("WARNING: Firebase config file not found at: " + configFile.getAbsolutePath());
+                    System.out.println("Firebase initialization skipped. Push notifications will not work.");
+                    System.out.println("To enable Firebase:");
+                    System.out.println("1. Download service account key from Firebase Console");
+                    System.out.println("2. Place it at: " + configFile.getAbsolutePath());
+                    return;
+                }
+
                 InputStream serviceAccount;
 
                 if (configPath.startsWith("classpath:")) {
@@ -36,12 +47,13 @@ public class FirebaseConfig {
                         .build();
 
                 FirebaseApp.initializeApp(options);
-                System.out.println("Firebase initialized successfully from: " + configPath);
+                System.out.println("✓ Firebase initialized successfully from: " + configPath);
             }
         } catch (IOException e) {
-            System.err.println("CRITICAL: Error initializing Firebase with path: " + configPath);
+            System.err.println("WARNING: Error initializing Firebase with path: " + configPath);
             System.err.println("Resolved path: " + new java.io.File(configPath).getAbsolutePath());
             System.err.println("Error message: " + e.getMessage());
+            System.err.println("Firebase initialization skipped. Push notifications will not work.");
         }
     }
 }

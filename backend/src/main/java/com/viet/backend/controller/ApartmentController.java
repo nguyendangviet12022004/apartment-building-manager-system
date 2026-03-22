@@ -9,8 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List;
 import java.util.Map;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 @RestController
 @RequestMapping("/api/v1/apartments")
@@ -20,8 +20,15 @@ public class ApartmentController {
     private final ApartmentService apartmentService;
 
     @PostMapping
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<ApartmentResponse> createApartment(@Valid @RequestBody ApartmentRequest request) {
         return ResponseEntity.ok(apartmentService.createApartment(request));
+    }
+
+    @PostMapping("/bulk-create")
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<?> bulkCreateApartments(@Valid @RequestBody com.viet.backend.dto.BulkCreateApartmentRequest request) {
+        return ResponseEntity.ok(apartmentService.bulkCreateApartments(request));
     }
 
     @GetMapping("/my")
@@ -31,15 +38,49 @@ public class ApartmentController {
                 .orElse(ResponseEntity.notFound().build());
     }
     @GetMapping
-    public List<ApartmentDTO> getApartments(
-            @RequestParam(required = false) Boolean used) {
-        if (used != null) return apartmentService.getByUsed(used);
-        return apartmentService.getAll();
+    public ResponseEntity<?> getApartments(
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) Long blockId,
+            @RequestParam(required = false) Integer floor,
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) Boolean used,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
+
+        if (used != null && page == null && size == null) {
+            return ResponseEntity.ok(apartmentService.getByUsed(used));
+        }
+
+        if (page == null && size == null && keyword == null && blockId == null && floor == null && status == null) {
+            return ResponseEntity.ok(apartmentService.getAll());
+        }
+
+        org.springframework.data.domain.Pageable pageable = 
+            org.springframework.data.domain.PageRequest.of(page != null ? page : 0, size != null ? size : 10);
+
+        return ResponseEntity.ok(apartmentService.getApartments(keyword, blockId, floor, status, pageable));
     }
 
     // GET /api/v1/apartments/{id}
     @GetMapping("/{id}")
-    public ApartmentDTO getById(@PathVariable Long id) {
-        return apartmentService.getById(id);
+    public ResponseEntity<?> getById(@PathVariable Long id) {
+        try {
+            return ResponseEntity.ok(apartmentService.getById(id));
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(404).body(Map.of("message", "Apartment not found"));
+        }
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+    public ResponseEntity<?> updateApartment(@PathVariable Long id, @Valid @RequestBody ApartmentRequest request) {
+        try {
+            return ResponseEntity.ok(apartmentService.updateApartment(id, request));
+        } catch (RuntimeException e) {
+            if (e.getMessage() != null && e.getMessage().contains("not found")) {
+                return ResponseEntity.status(404).body(Map.of("message", e.getMessage()));
+            }
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 }

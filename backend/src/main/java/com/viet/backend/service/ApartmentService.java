@@ -8,6 +8,9 @@ import com.viet.backend.model.Block;
 import com.viet.backend.repository.ApartmentRepository;
 import com.viet.backend.repository.BlockRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,7 +30,7 @@ public class ApartmentService {
         Block block = blockRepository.findById(request.getBlockId())
                 .orElseThrow(() -> new RuntimeException("Block not found with id: " + request.getBlockId()));
 
-        String code = request.getApartmentCode();
+        String code = generateApartmentCode(block, request.getFloor());
         validateApartmentCode(code, block, request.getFloor());
 
         if (apartmentRepository.findByApartmentCodeWithBlock(code).isPresent()) {
@@ -42,6 +45,89 @@ public class ApartmentService {
                 .block(block)
                 .used(false)
                 .build();
+
+        return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
+    }
+
+    @Transactional
+    public java.util.Map<String, Object> bulkCreateApartments(com.viet.backend.dto.BulkCreateApartmentRequest request) {
+        Block block = blockRepository.findById(request.getBlockId())
+                .orElseThrow(() -> new RuntimeException("Block not found with id: " + request.getBlockId()));
+
+        int unitCounter = 1;
+        List<String> createdCodes = new java.util.ArrayList<>();
+        List<Apartment> apartmentsToSave = new java.util.ArrayList<>();
+
+        for (com.viet.backend.dto.BulkCreateApartmentRequest.ApartmentUnitRequest unitReq : request.getUnits()) {
+            String floorPart = String.format("%02d", request.getFloor()) + String.format("%02d", unitCounter);
+            String base = block.getBlockCode() + "-" + floorPart;
+            
+            int sum = 0;
+            for (char c : base.toCharArray()) {
+                sum += c;
+            }
+            
+            String checksum = Integer.toHexString(sum).toUpperCase();
+            while (checksum.length() < 3) {
+                checksum = "0" + checksum;
+            }
+            if (checksum.length() > 3) {
+                checksum = checksum.substring(checksum.length() - 3);
+            }
+            
+            String code = base + "-" + checksum;
+
+            if (apartmentRepository.findByApartmentCodeWithBlock(code).isPresent()) {
+                throw new RuntimeException("Apartment code already exists system-wide: " + code);
+            }
+
+            Apartment apartment = Apartment.builder()
+                    .apartmentCode(code)
+                    .floor(request.getFloor())
+                    .area(unitReq.getArea())
+                    .status("VACANT")
+                    .block(block)
+                    .used(false)
+                    .build();
+
+            apartmentsToSave.add(apartment);
+            createdCodes.add(code);
+
+            unitCounter++;
+            if (unitCounter > 99) {
+                throw new RuntimeException("Maximum units per floor reached.");
+            }
+        }
+
+        apartmentRepository.saveAll(apartmentsToSave);
+
+        return java.util.Map.of(
+            "totalCreated", createdCodes.size(),
+            "createdCodes", createdCodes
+        );
+    }
+
+    @Transactional
+    public ApartmentResponse updateApartment(Long id, ApartmentRequest request) {
+        Apartment apartment = apartmentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Apartment not found: " + id));
+
+        Block block = blockRepository.findById(request.getBlockId())
+                .orElseThrow(() -> new RuntimeException("Block not found with: " + request.getBlockId()));
+
+        String code = request.getApartmentCode();
+        validateApartmentCode(code, block, request.getFloor());
+
+        Optional<Apartment> existingCodeApt = apartmentRepository.findByApartmentCodeWithBlock(code);
+        if (existingCodeApt.isPresent() && !existingCodeApt.get().getId().equals(id)) {
+            throw new RuntimeException("Apartment code already exists system-wide: " + code);
+        }
+
+        apartment.setApartmentCode(code);
+        apartment.setFloor(request.getFloor());
+        apartment.setArea(request.getArea());
+        apartment.setStatus(request.getStatus());
+        apartment.setBlock(block);
 
         return ApartmentResponse.fromEntity(apartmentRepository.save(apartment));
     }
@@ -91,12 +177,75 @@ public class ApartmentService {
         return checksum.equals(expected);
     }
 
+    private String generateApartmentCode(Block block, Integer floor) {
+        String blockCode = block.getBlockCode();
+        int unitCounter = 1;
+        String code = "";
+        
+        while (true) {
+            String floorPart = String.format("%02d", floor) + String.format("%02d", unitCounter);
+            String base = blockCode + "-" + floorPart;
+            
+            int sum = 0;
+            for (char c : base.toCharArray()) {
+                sum += c;
+            }
+            
+            String checksum = Integer.toHexString(sum).toUpperCase();
+            while (checksum.length() < 3) {
+                checksum = "0" + checksum;
+            }
+            if (checksum.length() > 3) {
+                checksum = checksum.substring(checksum.length() - 3);
+            }
+            
+            code = base + "-" + checksum;
+            
+            if (apartmentRepository.findByApartmentCodeWithBlock(code).isEmpty()) {
+                break;
+            }
+            
+            unitCounter++;
+            if (unitCounter > 99) {
+                throw new RuntimeException("Maximum units per floor reached.");
+            }
+        }
+        
+        return code;
+    }
+
     // Lấy tất cả apartments (dùng cho manager dropdown khi tạo invoice)
     public List<ApartmentDTO> getAll() {
         return apartmentRepository.findAllWithDetails(null)
                 .stream()
                 .map(this::toDTO)
                 .collect(Collectors.toList());
+    }
+
+    public Page<ApartmentDTO> getApartments(String keyword, Long blockId, Integer floor, String status,
+            Pageable pageable) {
+        Specification<Apartment> spec = Specification.where(null);
+
+        if (keyword != null && !keyword.trim().isEmpty()) {
+            spec = spec.and((root, query, cb) -> cb.like(cb.lower(root.get("apartmentCode")),
+                    "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (blockId != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("block").get("id"), blockId));
+        }
+
+        if (floor != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("floor"), floor));
+        }
+
+        if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
+            spec = spec.and((root, query, cb) -> cb.equal(cb.upper(root.get("status")), status.toUpperCase()));
+        }
+
+        // To avoid N+1 issues when mapping to DTO, we can use EntityGraph or let batch
+        // fetching handle it
+        return apartmentRepository.findAll(spec, pageable).map(this::toDTO);
     }
 
     // Lấy theo trạng thái used (true = đang có người ở)

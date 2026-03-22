@@ -1,4 +1,4 @@
-enum RequestStatus { PENDING, IN_PROGRESS, RESOLVED, REJECTED }
+enum RequestStatus { PENDING, APPROVED, REJECTED }
 
 enum MediaType { IMAGE, VIDEO }
 
@@ -21,9 +21,13 @@ class RequestModel {
   final String title;
   final String description;
   final RequestStatus status;
+  final String? issueType;
+  final String? priority;
   final DateTime createdAt;
+  final DateTime? solvedBy;
   final String? response;
   final DateTime? responseAt;
+  final String? adminName;
   final int userId;
   final String userEmail;
   final String userFullName;
@@ -34,9 +38,13 @@ class RequestModel {
     required this.title,
     required this.description,
     required this.status,
+    this.issueType,
+    this.priority,
     required this.createdAt,
+    this.solvedBy,
     this.response,
     this.responseAt,
+    this.adminName,
     required this.userId,
     required this.userEmail,
     required this.userFullName,
@@ -46,14 +54,20 @@ class RequestModel {
   factory RequestModel.fromJson(Map<String, dynamic> json) {
     return RequestModel(
       id: json['id'],
-      title: json['title'],
-      description: json['description'],
-      status: RequestStatus.values.byName(json['status']),
-      createdAt: DateTime.parse(json['createdAt']),
+      title: json['title'] ?? '',
+      description: json['description'] ?? '',
+      status: RequestStatus.values.byName(json['status'] ?? 'PENDING'),
+      issueType: json['issueType'],
+      priority: json['priority'] ?? 'LOW',
+      createdAt: json['createdAt'] != null ? DateTime.parse(json['createdAt']) : DateTime.now(),
+      solvedBy: json['solvedBy'] != null
+          ? DateTime.parse(json['solvedBy'])
+          : null,
       response: json['response'],
       responseAt: json['responseAt'] != null
           ? DateTime.parse(json['responseAt'])
           : null,
+      adminName: json['adminName'],
       userId: json['userId'],
       userEmail: json['userEmail'],
       userFullName: json['userFullName'],

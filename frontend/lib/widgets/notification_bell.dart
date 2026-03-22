@@ -6,7 +6,10 @@ import '../routes/app_routes.dart';
 import '../screens/notification_detail_screen.dart';
 
 class NotificationBell extends StatelessWidget {
-  const NotificationBell({super.key});
+  final Color? iconColor;
+  final double? iconSize;
+
+  const NotificationBell({super.key, this.iconColor, this.iconSize});
 
   @override
   Widget build(BuildContext context) {
@@ -16,7 +19,7 @@ class NotificationBell extends StatelessWidget {
     return PopupMenuButton(
       icon: Stack(
         children: [
-          const Icon(Icons.notifications_none_outlined, size: 28),
+          Icon(Icons.notifications_none_outlined, size: iconSize ?? 28, color: iconColor),
           if (notificationProvider.unreadCount > 0)
             Positioned(
               right: 0,

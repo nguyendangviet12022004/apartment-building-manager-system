@@ -20,9 +20,18 @@ public class RequestResponse {
     private String title;
     private String description;
     private Request.RequestStatus status;
+    private String issueType;
+    private Request.Priority priority;
+    private String location;
+    private LocalDateTime occurrenceTime;
     private LocalDateTime createdAt;
+    private LocalDateTime solvedBy;
+
+    // Flattened AdminResponse for easier frontend consumption
     private String response;
     private LocalDateTime responseAt;
+    private String adminName;
+
     private Integer userId;
     private String userEmail;
     private String userFullName;
@@ -38,14 +47,17 @@ public class RequestResponse {
     }
 
     public static RequestResponse fromEntity(Request request) {
-        return RequestResponse.builder()
+        RequestResponseBuilder builder = RequestResponse.builder()
                 .id(request.getId())
                 .title(request.getTitle())
                 .description(request.getDescription())
                 .status(request.getStatus())
+                .issueType(request.getIssueType())
+                .priority(request.getPriority())
+                .location(request.getLocation())
+                .occurrenceTime(request.getOccurrenceTime())
                 .createdAt(request.getCreatedAt())
-                .response(request.getResponse())
-                .responseAt(request.getResponseAt())
+                .solvedBy(request.getSolvedBy())
                 .userId(request.getUser().getId())
                 .userEmail(request.getUser().getEmail())
                 .userFullName(request.getUser().getFirstname() + " " + request.getUser().getLastname())
@@ -54,7 +66,17 @@ public class RequestResponse {
                                 .url(m.getUrl())
                                 .type(m.getMediaType())
                                 .build())
-                        .collect(Collectors.toList()))
-                .build();
+                        .collect(Collectors.toList()));
+
+        if (request.getAdminResponse() != null) {
+            builder.response(request.getAdminResponse().getContent())
+                    .responseAt(request.getAdminResponse().getRespondedAt());
+            if (request.getAdminResponse().getAdmin() != null) {
+                builder.adminName(request.getAdminResponse().getAdmin().getFirstname() + " " +
+                        request.getAdminResponse().getAdmin().getLastname());
+            }
+        }
+
+        return builder.build();
     }
 }

@@ -14,6 +14,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
@@ -38,6 +39,28 @@ public class RequestController {
         return ResponseEntity.ok(requestService.getUserRequests(userId, pageable));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<Page<RequestResponse>> getMyRequests(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String issueType,
+            @RequestParam(required = false, defaultValue = "newest") String sort,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+        return ResponseEntity.ok(requestService.getMyRequests(status, issueType, sort, page, size));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RequestResponse> createResidentRequest(
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String issueType,
+            @RequestParam String priority,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String occurrenceTime,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        return ResponseEntity.ok(requestService.createResidentRequest(title, description, issueType, priority, location, occurrenceTime, files));
+    }
+
     @PostMapping(value = "/user/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RequestResponse> createRequest(
             @PathVariable Integer userId,
@@ -51,8 +74,17 @@ public class RequestController {
     @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<RequestResponse> updateStatus(
             @PathVariable Long requestId,
+            @RequestHeader("X-User-ID") Integer adminId,
             @RequestParam Request.RequestStatus status,
             @RequestParam(required = false) String response) {
-        return ResponseEntity.ok(requestService.updateStatus(requestId, status, response));
+        return ResponseEntity.ok(requestService.updateStatus(requestId, adminId, status, response));
+    }
+
+    @PatchMapping("/{requestId}/timeline")
+    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+    public ResponseEntity<RequestResponse> setTimeline(
+            @PathVariable Long requestId,
+            @RequestParam LocalDateTime solvedBy) {
+        return ResponseEntity.ok(requestService.setTimeline(requestId, solvedBy));
     }
 }

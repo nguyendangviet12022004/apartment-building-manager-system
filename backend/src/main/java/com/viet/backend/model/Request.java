@@ -32,10 +32,26 @@ public class Request {
     private RequestStatus status;
 
     private LocalDateTime createdAt;
-    private String response;
-    private LocalDateTime responseAt;
+
+    @OneToOne(mappedBy = "request", cascade = CascadeType.ALL)
+    private AdminResponse adminResponse;
+
+    private LocalDateTime solvedBy;
+
+    private String issueType;
+
+    @Enumerated(EnumType.ORDINAL)
+    private Priority priority;
+
+    private String location;
+
+    private LocalDateTime occurrenceTime;
 
     public enum RequestStatus {
-        PENDING, IN_PROGRESS, RESOLVED, REJECTED
+        PENDING, APPROVED, REJECTED
+    }
+
+    public enum Priority {
+        HIGH, MEDIUM, LOW
     }
 }
