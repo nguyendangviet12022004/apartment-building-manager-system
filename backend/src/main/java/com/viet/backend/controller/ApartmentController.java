@@ -20,7 +20,7 @@ public class ApartmentController {
     private final ApartmentService apartmentService;
 
     @PostMapping
-    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+//    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<ApartmentResponse> createApartment(@Valid @RequestBody ApartmentRequest request) {
         return ResponseEntity.ok(apartmentService.createApartment(request));
     }
@@ -72,7 +72,7 @@ public class ApartmentController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
+//    @PreAuthorize("hasAnyAuthority('MANAGER', 'ROLE_MANAGER', 'ADMIN', 'ROLE_ADMIN')")
     public ResponseEntity<?> updateApartment(@PathVariable Long id, @Valid @RequestBody ApartmentRequest request) {
         try {
             return ResponseEntity.ok(apartmentService.updateApartment(id, request));
