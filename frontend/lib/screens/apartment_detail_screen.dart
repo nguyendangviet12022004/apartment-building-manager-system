@@ -72,47 +72,49 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
             onPressed: () => Navigator.pop(context, _isUpdated),
           ),
           title: const Text(
-          'Apartment Details',
-          style: TextStyle(
-            color: Color(0xFF7A2A46),
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
-        ),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.edit, color: Color(0xFF7A2A46), size: 20),
-            onPressed: () async {
-              if (_apartmentDetail != null) {
-                final result = await Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        EditApartmentScreen(apartmentDetail: _apartmentDetail!),
-                  ),
-                );
-                if (result == true && mounted) {
-                  _isUpdated = true;
-                  setState(() {
-                    _isLoading = true;
-                  });
-                  _fetchApartmentDetail();
-                }
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(
-              Icons.notifications,
+            'Apartment Details',
+            style: TextStyle(
               color: Color(0xFF7A2A46),
-              size: 20,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
             ),
-            onPressed: () {},
           ),
-        ],
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.edit, color: Color(0xFF7A2A46), size: 20),
+              onPressed: () async {
+                if (_apartmentDetail != null) {
+                  final result = await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => EditApartmentScreen(
+                        apartmentDetail: _apartmentDetail!,
+                      ),
+                    ),
+                  );
+                  if (result == true && mounted) {
+                    _isUpdated = true;
+                    setState(() {
+                      _isLoading = true;
+                    });
+                    _fetchApartmentDetail();
+                  }
+                }
+              },
+            ),
+            IconButton(
+              icon: const Icon(
+                Icons.notifications,
+                color: Color(0xFF7A2A46),
+                size: 20,
+              ),
+              onPressed: () {},
+            ),
+          ],
+        ),
+        body: _buildBody(),
       ),
-      body: _buildBody(),
-    ));
+    );
   }
 
   Widget _buildBody() {
@@ -224,15 +226,21 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
     Color textColor;
     String label;
     if (status == 'OCCUPIED') {
-      bgColor = isDark ? Colors.redAccent.withOpacity(0.2) : const Color(0xFFFFEAEA);
+      bgColor = isDark
+          ? Colors.redAccent.withOpacity(0.2)
+          : const Color(0xFFFFEAEA);
       textColor = isDark ? Colors.redAccent : const Color(0xFFB84566);
       label = 'Occupied';
     } else if (status == 'FIXING') {
-      bgColor = isDark ? Colors.orangeAccent.withOpacity(0.2) : const Color(0xFFFFF4E5);
+      bgColor = isDark
+          ? Colors.orangeAccent.withOpacity(0.2)
+          : const Color(0xFFFFF4E5);
       textColor = isDark ? Colors.orangeAccent : const Color(0xFFE6A23C);
       label = 'Fixing';
     } else {
-      bgColor = isDark ? Colors.greenAccent.withOpacity(0.2) : const Color(0xFFE6F4EA);
+      bgColor = isDark
+          ? Colors.greenAccent.withOpacity(0.2)
+          : const Color(0xFFE6F4EA);
       textColor = isDark ? Colors.greenAccent : const Color(0xFF1E8E3E);
       label = 'Vacant';
     }
@@ -242,7 +250,11 @@ class _ApartmentDetailScreenState extends State<ApartmentDetailScreen> {
       decoration: BoxDecoration(
         color: isDark ? Colors.white.withOpacity(0.2) : bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: isDark ? Colors.white.withOpacity(0.5) : textColor.withOpacity(0.3)),
+        border: Border.all(
+          color: isDark
+              ? Colors.white.withOpacity(0.5)
+              : textColor.withOpacity(0.3),
+        ),
       ),
       child: Row(
         children: [
