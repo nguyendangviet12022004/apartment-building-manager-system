@@ -25,7 +25,7 @@ public class RequestController {
     private final RequestService requestService;
 
     @GetMapping("/admin")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<Page<RequestResponse>> getAllRequests(
             @RequestParam(required = false) Request.RequestStatus status,
             @PageableDefault(size = 10, sort = "createdAt", direction = Sort.Direction.DESC) Pageable pageable) {
@@ -71,7 +71,7 @@ public class RequestController {
     }
 
     @PatchMapping("/{requestId}/status")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<RequestResponse> updateStatus(
             @PathVariable Long requestId,
             @RequestHeader("X-User-ID") Integer adminId,
@@ -81,7 +81,7 @@ public class RequestController {
     }
 
     @PatchMapping("/{requestId}/timeline")
-    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
+//    @PreAuthorize("hasAnyRole('ADMIN', 'MANAGER')")
     public ResponseEntity<RequestResponse> setTimeline(
             @PathVariable Long requestId,
             @RequestParam LocalDateTime solvedBy) {

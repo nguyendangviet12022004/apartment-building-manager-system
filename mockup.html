@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment Manager Mockups - Low Fidelity Wireframes</title>
+    <style>
+        :root {
+            --bg-color: #ffffff;
+            --white: #ffffff;
+            --black: #000000;
+            --text-main: #000000;
+            --text-muted: #333333;
+            --border-color: #000000;
+            --pill-bg: #e0e0e0;
+            --pill-text: #000000;
+            --primary-blue: #000000;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: monospace;
+        }
+
+        body {
+            background-color: #ffffff;
+            padding: 40px;
+        }
+
+        .header-title {
+            text-align: center;
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 40px;
+            color: #000;
+        }
+
+        .gallery {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 40px;
+            justify-content: center;
+            align-items: flex-start;
+        }
+
+        .mockup-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mockup-title {
+            font-size: 16px;
+            font-weight: bold;
+            color: #000;
+            text-transform: uppercase;
+        }
+
+        .mobile-container {
+            width: 390px;
+            height: 844px;
+            background-color: var(--white);
+            position: relative;
+            border: 2px solid #000;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .status-bar {
+            height: 30px;
+            background-color: var(--white);
+            color: var(--black);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 10px;
+            font-size: 12px;
+            border-bottom: 1px solid var(--black);
+        }
+
+        .status-icons { display: flex; gap: 4px; }
+        .status-icons svg { width: 12px; height: 12px; fill: #000; }
+
+        .screen {
+            display: flex;
+            flex: 1;
+            background-color: var(--white);
+            flex-direction: column;
+            overflow-y: auto;
+        }
+
+        .app-bar {
+            background-color: var(--white);
+            padding: 15px;
+            display: flex;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+            border-bottom: 2px solid var(--black);
+        }
+
+        .back-btn { margin-right: 10px; cursor: pointer; }
+
+        .content { padding: 15px; display: flex; flex-direction: column; gap: 15px; }
+        .form-screen { padding: 20px; }
+        h1.title { font-size: 20px; text-decoration: underline; margin-bottom: 10px; text-align: center;}
+        p.subtitle { font-size: 14px; text-align: center; margin-bottom: 20px; }
+
+        .input-group { margin-bottom: 15px; display: flex; flex-direction: column; gap: 5px; }
+        .input-group label { font-size: 14px; font-weight: bold; }
+        .input-group input, .input-group select { padding: 10px; border: 1px solid var(--black); font-size: 14px; background: #fff;}
+
+        .btn {
+            background-color: var(--white);
+            color: var(--black);
+            padding: 12px;
+            border: 2px solid var(--black);
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            width: 100%;
+            text-transform: uppercase;
+        }
+
+        .btn-outline { border-style: dashed; }
+        .text-link { color: var(--black); font-size: 12px; text-decoration: underline; text-align: center; margin-top: 15px; cursor: pointer; }
+        .forgot-link { text-align: right; margin-top: -5px; margin-bottom: 15px; }
+
+        .card { border: 1px solid var(--black); padding: 15px; background: #fff; }
+        .card-header { font-size: 12px; font-weight: bold; border-bottom: 1px dashed var(--black); padding-bottom: 5px; margin-bottom: 10px; }
+        
+        .resident-info { display: flex; align-items: center; gap: 10px; }
+        .avatar { width: 40px; height: 40px; border: 1px solid #000; display: flex; justify-content: center; align-items: center; font-size: 12px; }
+        .resident-details h3 { font-size: 14px; margin-bottom: 5px; }
+        .resident-details p { font-size: 12px; }
+
+        .menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 15px; }
+        .menu-item { border: 1px solid var(--black); padding: 20px 10px; text-align: center; font-weight: bold; font-size: 12px; text-transform: uppercase; cursor: pointer; }
+        .menu-icon { margin-bottom: 10px; font-size: 20px; }
+        
+        .logout-btn { background-color: #eee; margin-top: 20px; }
+        
+        .list-item { padding: 10px 0; border-bottom: 1px solid var(--black); cursor: pointer; }
+        .list-item:last-child { border-bottom: none; }
+        .item-header { display: flex; justify-content: space-between; margin-bottom: 5px; }
+        .item-title { font-weight: bold; font-size: 14px; }
+        .item-date { font-size: 12px; }
+        .item-desc { font-size: 12px; display: -webkit-box; -webkit-line-clamp: 2; line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+        
+        .pill { display: inline-block; background-color: #eee; border: 1px solid #000; padding: 2px 8px; font-size: 10px; text-transform: uppercase; margin-top: 5px; }
+        
+        .detail-title { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+        .detail-date { font-size: 12px; margin-bottom: 15px; }
+        .detail-body { font-size: 14px; line-height: 1.4; }
+        
+        .filter-row { display: flex; gap: 5px; overflow-x: auto; padding-bottom: 10px; border-bottom: 1px solid #000; margin-bottom: 10px; }
+        .filter-pill { border: 1px solid var(--black); padding: 5px 10px; font-size: 12px; white-space: nowrap; cursor: pointer; }
+        .filter-pill.active { background-color: var(--black); color: var(--white); }
+        
+        hr { border: none; border-top: 1px dashed var(--black); margin: 15px 0; }
+    </style>
+</head>
+
+<body>
+
+    <h1 class="header-title">Apartment Manager UI Mockups</h1>
+
+    <div class="gallery">
+
+        <!-- 1. LOGIN SCREEN -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">1. Login</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen form-screen">
+                    <div style="text-align: center; margin-bottom: 24px; margin-top: 20px;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="var(--primary-blue)">
+                            <path d="M7 19h10V4H7v15zm-5-2h4V6H2v11zM19 6v11h4V6h-4z" />
+                        </svg>
+                    </div>
+                    <h1 class="title">Welcome Back</h1>
+                    <p class="subtitle">Sign in to manage your apartment</p>
+
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" placeholder="Enter your email" value="nguyenvana@example.com">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" placeholder="Enter your password" value="12345678">
+                    </div>
+                    <div class="text-link forgot-link">Forgot Password?</div>
+
+                    <button class="btn">Login</button>
+                    <div class="text-link">Don't have an account? Register Now</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 2. REGISTER SCREEN -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">2. Register</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen form-screen">
+                    <div class="app-bar" style="padding: 0 0 16px 0; border: none; background: transparent;">
+                        <span class="back-btn">&lt;</span>
+                    </div>
+                    <h1 class="title" style="text-align: left; margin-top: -10px;">Create Account</h1>
+                    <p class="subtitle" style="text-align: left;">Join us to manage your home easily</p>
+
+                    <div class="input-group">
+                        <label>First Name</label>
+                        <input type="text" placeholder="First Name">
+                    </div>
+                    <div class="input-group">
+                        <label>Last Name</label>
+                        <input type="text" placeholder="Last Name">
+                    </div>
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" placeholder="Enter email">
+                    </div>
+                    <div class="input-group">
+                        <label>Identity Card / Passport</label>
+                        <input type="text" placeholder="ID Number">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <input type="password" placeholder="Create password">
+                    </div>
+
+                    <button class="btn">Register</button>
+                    <div class="text-link">Already have an account? Login</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3. FORGOT PASSWORD -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">3. Forgot Password</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen form-screen">
+                    <div class="app-bar" style="padding: 0 0 16px 0; border: none; background: transparent;">
+                        <span class="back-btn">&lt;</span>
+                    </div>
+                    <h1 class="title" style="text-align: left; margin-top: -10px;">Reset Password</h1>
+                    <p class="subtitle" style="text-align: left;">Enter your email to receive a reset link</p>
+
+                    <div class="input-group">
+                        <label>Email</label>
+                        <input type="email" placeholder="Enter registered email">
+                    </div>
+
+                    <button class="btn">Send Reset Link</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 4. CHANGE PASSWORD -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">4. Change Password</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        <span class="back-btn">&lt;</span> Change Password
+                    </div>
+                    <div class="content form-screen">
+                        <div class="input-group">
+                            <label>Old Password</label>
+                            <input type="password" placeholder="Enter old password">
+                        </div>
+                        <div class="input-group">
+                            <label>New Password</label>
+                            <input type="password" placeholder="Enter new password">
+                        </div>
+                        <div class="input-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" placeholder="Confirm new password">
+                        </div>
+                        <button class="btn" style="margin-top: 24px;">Update Password</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 5. DASHBOARD / MENU (INCLS LOGOUT) -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">5. Dashboard / Menu</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        Dashboard
+                    </div>
+                    <div class="content">
+                        <div class="card resident-info" style="margin-bottom: 8px;">
+                            <div class="avatar">NA</div>
+                            <div class="resident-details">
+                                <h3>Nguyen Van A</h3>
+                                <p>A501 - Tower A - Floor 5</p>
+                            </div>
+                        </div>
+
+                        <div class="menu-grid">
+                            <div class="menu-item">
+                                <div class="menu-icon">🔔</div>
+                                Notifications
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">📋</div>
+                                Requests
+                            </div>
+                            <div class="menu-item">
+                                <div class="menu-icon">🔑</div>
+                                Change Password
+                            </div>
+                        </div>
+
+                        <button class="btn logout-btn">Logout</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 6. NOTIFICATION LIST -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">6. Notification List</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        <span class="back-btn">&lt;</span> Notifications
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Water Maintenance</span>
+                                    <span class="item-date">Oct 12, 2025</span>
+                                </div>
+                                <div class="item-desc">Please be informed that there will be a scheduled water
+                                    maintenance tomorrow morning from 8 AM to 12 PM.</div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Monthly Invoice Available</span>
+                                    <span class="item-date">Oct 01, 2025</span>
+                                </div>
+                                <div class="item-desc">Your invoice for October has been generated. Please review and
+                                    process the payment before the 10th.</div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Fire Drill Notice</span>
+                                    <span class="item-date">Sep 25, 2025</span>
+                                </div>
+                                <div class="item-desc">The annual fire drill will happen this weekend. Please follow
+                                    instructions from floor captains.</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 7. NOTIFICATION DETAIL -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">7. Notification Detail</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        <span class="back-btn">&lt;</span> Notification Detail
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <div class="detail-title">Water Maintenance Notice</div>
+                            <div class="detail-date">Oct 12, 2025 - 09:00 AM</div>
+                            <div class="detail-body">
+                                Dear Residents, <br><br>
+                                Please be informed that there will be a scheduled water maintenance tomorrow morning
+                                from 8:00 AM to 12:00 PM affecting Tower A.<br><br>
+                                We apologize for any inconvenience this may cause and appreciate your understanding as
+                                we work to improve our facilities.<br><br>
+                                Regards,<br>Management Board
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 8. REQUEST LIST -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">8. Request List & Filter</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        <span class="back-btn">&lt;</span> Request List
+                    </div>
+                    <div class="content">
+                        <div class="filter-row">
+                            <div class="filter-pill active">All</div>
+                            <div class="filter-pill">Pending</div>
+                            <div class="filter-pill">Processing</div>
+                            <div class="filter-pill">Done</div>
+                        </div>
+
+                        <div class="card" style="margin-top: 8px;">
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Air Conditioner Repair</span>
+                                    <span class="item-date">Oct 14, 2025</span>
+                                </div>
+                                <div class="pill">Pending</div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Leaking Faucet</span>
+                                    <span class="item-date">Oct 10, 2025</span>
+                                </div>
+                                <div class="pill" style="background-color: #f59e0b;">Processing</div>
+                            </div>
+                            <div class="list-item">
+                                <div class="item-header">
+                                    <span class="item-title">Keycard Replacement</span>
+                                    <span class="item-date">Sep 28, 2025</span>
+                                </div>
+                                <div class="pill" style="background-color: #10b981;">Done</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 9. REQUEST DETAIL STR -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">9. Request Detail / Update Status</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen">
+                    <div class="app-bar">
+                        <span class="back-btn">&lt;</span> Request Detail
+                    </div>
+                    <div class="content">
+                        <div class="card">
+                            <div class="card-header">Resident</div>
+                            <div class="resident-info">
+                                <div class="avatar">NA</div>
+                                <div class="resident-details">
+                                    <h3>Nguyen Van A</h3>
+                                    <p>A501 - Tower A - Floor 5</p>
+                                    <p>ngu***@example.com · 090-***-4567</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="card">
+                            <div class="card-header">Request Info</div>
+                            <div class="detail-title">Air Conditioner Repair</div>
+                            <div class="detail-date">Oct 14, 2025 - Pending</div>
+                            <div class="detail-body" style="margin-bottom: 16px;">
+                                The AC unit in the living room is making strange noises and not cooling properly. Need
+                                technical support.
+                            </div>
+
+                            <hr style="border: none; border-top: 1px solid var(--border-color); margin-bottom: 16px;">
+
+                            <div class="card-header">Update Status</div>
+                            <div class="input-group">
+                                <select>
+                                    <option value="pending" selected>Pending</option>
+                                    <option value="processing">Processing</option>
+                                    <option value="done">Done</option>
+                                </select>
+                            </div>
+                            <button class="btn btn-outline" onclick="alert('Status updated!')">Update Status</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 10. ENTER APARTMENT ACCESS CODE -->
+        <div class="mockup-wrapper">
+            <div class="mockup-title">10. Enter Access Code</div>
+            <div class="mobile-container">
+                <div class="status-bar">
+                    <span>3:36</span>
+                    <div class="status-icons">
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path d="M2 22h20V2L2 22z" />
+                        </svg>
+                        <svg viewBox="0 0 24 24" fill="white">
+                            <path
+                                d="M15.67 4H14V2h-4v2H8.33C7.6 4 7 4.6 7 5.33v15.33C7 21.4 7.6 22 8.33 22h7.33c.74 0 1.34-.6 1.34-1.33V5.33C17 4.6 16.4 4 15.67 4z" />
+                        </svg>
+                    </div>
+                </div>
+                <div class="screen form-screen">
+                    <div class="app-bar" style="padding: 0 0 16px 0; border: none; background: transparent;">
+                        <span class="back-btn">&lt;</span>
+                    </div>
+                    <div style="text-align: center; margin-bottom: 24px; margin-top: 10px;">
+                        <svg width="60" height="60" viewBox="0 0 24 24" fill="var(--primary-blue)">
+                            <path d="M12.65 10C11.83 7.67 9.61 6 7 6c-3.31 0-6 2.69-6 6s2.69 6 6 6c2.61 0 4.83-1.67 5.65-4H17v4h4v-4h2v-4H12.65zM7 14c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2z"/>
+                        </svg>
+                    </div>
+                    <h1 class="title">Apartment Access</h1>
+                    <p class="subtitle">Enter the code provided by your admin to link your apartment</p>
+
+                    <div class="input-group">
+                        <label>Access Code</label>
+                        <input type="text" placeholder="e.g. A501-XYZ-1234">
+                    </div>
+
+                    <button class="btn" style="margin-top: 24px;">Link Apartment</button>
+                    <div class="text-link">Contact Admin for Support</div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

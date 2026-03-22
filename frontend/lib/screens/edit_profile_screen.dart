@@ -31,6 +31,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   late TextEditingController _emergencyNameController;
   late TextEditingController _emergencyPhoneController;
   late TextEditingController _relationshipController;
+  late TextEditingController _identityCardController;
 
   String? _selectedGender;
   String? _selectedRelationship;
@@ -57,6 +58,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _emergencyPhoneController = TextEditingController(
       text: widget.profile.emergencyContactPhone ?? '',
     );
+    _identityCardController = TextEditingController(text: widget.profile.identityCard ?? '');
     _relationshipController = TextEditingController(text: 'Spouse');
 
     _selectedGender = widget.profile.gender;
@@ -73,6 +75,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _dobController.dispose();
     _emergencyNameController.dispose();
     _emergencyPhoneController.dispose();
+    _identityCardController.dispose();
     _relationshipController.dispose();
     super.dispose();
   }
@@ -208,6 +211,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         'phone': _phoneController.text.trim(),
         'dateOfBirth': _dobController.text.trim(),
         'gender': _selectedGender,
+        'identityCard': _identityCardController.text.trim(),
         'emergencyContactName': _emergencyNameController.text.trim(),
         'emergencyContactPhone': _emergencyPhoneController.text.trim(),
         'emergencyContactRelationship': _selectedRelationship,
@@ -483,6 +487,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedGender,
             items: ['Male', 'Female', 'Other'],
             onChanged: (value) => setState(() => _selectedGender = value),
+          ),
+          const SizedBox(height: 16),
+          _buildTextField(
+            label: 'Identity Card (CCCD/CMND)',
+            controller: _identityCardController,
+            validator: (value) {
+              if (value == null || value.isEmpty) {
+                return 'Please enter your identity card number';
+              }
+              if (value.length != 9 && value.length != 12) {
+                return 'Identity card must be 9 or 12 digits';
+              }
+              return null;
+            },
+            keyboardType: TextInputType.number,
           ),
         ],
       ),
