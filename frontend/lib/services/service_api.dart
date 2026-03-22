@@ -17,12 +17,16 @@ class ServiceApi {
   Future<List<ServiceModel>> getAmenityServices() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken');
+    final userId = prefs.getInt(
+      'userId',
+    ); // Giả định userId được lưu khi đăng nhập
 
     final response = await http.get(
       Uri.parse('$baseUrl/services'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        if (userId != null) 'X-User-ID': '$userId',
       },
     );
 
@@ -38,23 +42,25 @@ class ServiceApi {
     }
   }
 
-  Future<List<BookingModel>> getMyBookings() async {
+  Future<List<dynamic>> getMyBookings() async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken');
+    final userId = prefs.getInt('userId');
 
     final response = await http.get(
       Uri.parse('$baseUrl/bookings/my'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        if (userId != null) 'X-User-ID': '$userId',
       },
     );
 
     if (response.statusCode == 200) {
       final List<dynamic> body = jsonDecode(utf8.decode(response.bodyBytes));
-      return body.map((e) => BookingModel.fromJson(e)).toList();
+      return body; // Trả về List<dynamic> để khớp với màn hình history
     } else {
-      throw Exception('Failed to load bookings: ${response.statusCode}');
+      throw Exception('Failed to load my bookings: ${response.body}');
     }
   }
 
@@ -62,12 +68,14 @@ class ServiceApi {
   Future<List<dynamic>> getBookingSchedule(int serviceId, String date) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken');
+    final userId = prefs.getInt('userId');
 
     final response = await http.get(
       Uri.parse('$baseUrl/bookings/schedule?serviceId=$serviceId&date=$date'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        if (userId != null) 'X-User-ID': '$userId',
       },
     );
 
@@ -82,18 +90,39 @@ class ServiceApi {
   Future<void> createBooking(Map<String, dynamic> data) async {
     final prefs = await SharedPreferences.getInstance();
     final token = prefs.getString('accessToken');
+    final userId = prefs.getInt('userId');
 
     final response = await http.post(
       Uri.parse('$baseUrl/bookings'),
       headers: {
         'Content-Type': 'application/json',
         if (token != null) 'Authorization': 'Bearer $token',
+        if (userId != null) 'X-User-ID': '$userId',
       },
       body: jsonEncode(data),
     );
 
     if (response.statusCode != 200) {
-      throw Exception(response.body);
+      throw Exception(utf8.decode(response.bodyBytes));
+    }
+  }
+
+  Future<void> cancelBooking(int bookingId) async {
+    final prefs = await SharedPreferences.getInstance();
+    final token = prefs.getString('accessToken');
+    final userId = prefs.getInt('userId');
+
+    final response = await http.patch(
+      Uri.parse('$baseUrl/bookings/$bookingId/cancel'),
+      headers: {
+        'Content-Type': 'application/json',
+        if (token != null) 'Authorization': 'Bearer $token',
+        if (userId != null) 'X-User-ID': '$userId',
+      },
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception(utf8.decode(response.bodyBytes));
     }
   }
 }

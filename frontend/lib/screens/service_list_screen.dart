@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/service_model.dart';
 import '../services/service_api.dart';
 import 'create_bookings_screen.dart';
+import 'booking_history_screen.dart';
 
 class ServiceListScreen extends StatefulWidget {
   const ServiceListScreen({Key? key}) : super(key: key);
@@ -58,6 +59,18 @@ class _ServiceListScreenState extends State<ServiceListScreen> {
                       fontWeight: FontWeight.bold,
                       color: Colors.black,
                     ),
+                  ),
+                  const Spacer(),
+                  IconButton(
+                    icon: const Icon(Icons.history, color: Colors.black),
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const BookingHistoryScreen(),
+                        ),
+                      );
+                    },
                   ),
                 ],
               ),

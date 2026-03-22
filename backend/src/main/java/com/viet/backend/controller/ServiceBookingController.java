@@ -144,6 +144,44 @@ public class ServiceBookingController {
         return ResponseEntity.ok(mapToResponse(savedBooking));
     }
 
+    @PatchMapping("/{id}/cancel")
+    public ResponseEntity<?> cancelBooking(@PathVariable Long id, @RequestHeader("X-User-ID") Integer userId) {
+        ServiceBooking booking = bookingRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Booking not found"));
+
+        // 1. Check Ownership
+        // Assuming Resident -> User relationship
+        if (!booking.getApartment().getResident().getUser().getId().equals(userId)) {
+            return ResponseEntity.status(403).body("You do not have permission to cancel this booking.");
+        }
+
+        // 2. Check Status
+        if (booking.getStatus() == ServiceBooking.BookingStatus.CANCELLED ||
+            booking.getStatus() == ServiceBooking.BookingStatus.REJECTED ||
+            booking.getStatus() == ServiceBooking.BookingStatus.COMPLETED) {
+            return ResponseEntity.badRequest().body("Booking cannot be cancelled in its current status.");
+        }
+
+        // 3. Time Rule: Must be at least 3 hours before start time
+        // Example: Start 14:00. Limit 11:00. If Now is 11:30 -> Fail.
+        LocalDateTime cancelLimit = booking.getStartTime().minusHours(3);
+        if (LocalDateTime.now().isAfter(cancelLimit)) {
+            return ResponseEntity.badRequest().body("Huỷ thất bại: Chỉ được phép hủy trước giờ hẹn 3 tiếng.");
+        }
+
+        // 4. Update Status
+        booking.setStatus(ServiceBooking.BookingStatus.CANCELLED);
+        ServiceBooking updated = bookingRepository.save(booking);
+
+        // Optional: Return Payment if necessary (Not implemented yet)
+        if (updated.getTotalPrice() != null && updated.getTotalPrice().compareTo(BigDecimal.ZERO) > 0) {
+            // Logic hoàn tiền hoặc ghi nợ vào invoice tháng sau
+            // TODO: Implement refund logic
+        }
+
+        return ResponseEntity.ok(mapToResponse(updated));
+    }
+
     private ServiceBookingResponse mapToResponse(ServiceBooking booking) {
         return ServiceBookingResponse.builder()
                 .id(booking.getId())
