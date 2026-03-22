@@ -39,6 +39,28 @@ public class RequestController {
         return ResponseEntity.ok(requestService.getUserRequests(userId, pageable));
     }
 
+    @GetMapping("/my")
+    public ResponseEntity<Page<RequestResponse>> getMyRequests(
+            @RequestParam(required = false) String status,
+            @RequestParam(required = false) String issueType,
+            @RequestParam(required = false, defaultValue = "newest") String sort,
+            @RequestParam(required = false, defaultValue = "0") int page,
+            @RequestParam(required = false, defaultValue = "20") int size) {
+        return ResponseEntity.ok(requestService.getMyRequests(status, issueType, sort, page, size));
+    }
+
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<RequestResponse> createResidentRequest(
+            @RequestParam String title,
+            @RequestParam String description,
+            @RequestParam String issueType,
+            @RequestParam String priority,
+            @RequestParam(required = false) String location,
+            @RequestParam(required = false) String occurrenceTime,
+            @RequestPart(value = "files", required = false) List<MultipartFile> files) {
+        return ResponseEntity.ok(requestService.createResidentRequest(title, description, issueType, priority, location, occurrenceTime, files));
+    }
+
     @PostMapping(value = "/user/{userId}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<RequestResponse> createRequest(
             @PathVariable Integer userId,

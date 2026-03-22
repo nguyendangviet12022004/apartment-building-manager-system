@@ -46,6 +46,98 @@ public class RequestService {
                 .map(RequestResponse::fromEntity);
     }
 
+    public Page<RequestResponse> getMyRequests(String statusStr, String issueType, String sortStr, int page, int size) {
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+
+        org.springframework.data.domain.Sort sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
+        if (sortStr != null && !sortStr.isEmpty()) {
+            switch (sortStr.toLowerCase()) {
+                case "oldest":
+                    sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "createdAt");
+                    break;
+                case "newest":
+                    sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.DESC, "createdAt");
+                    break;
+                case "priority":
+                    sort = org.springframework.data.domain.Sort.by(org.springframework.data.domain.Sort.Direction.ASC, "priority"); 
+                    break;
+            }
+        }
+
+        if (issueType != null && issueType.trim().isEmpty()) {
+            issueType = null;
+        }
+
+        Request.RequestStatus status = null;
+        if (statusStr != null && !statusStr.trim().isEmpty()) {
+            try {
+                status = Request.RequestStatus.valueOf(statusStr.toUpperCase());
+            } catch (IllegalArgumentException e) {
+                // Ignore
+            }
+        }
+
+        Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
+        return requestRepository.findByUserIdWithFilters(user.getId(), status, issueType, pageable)
+                .map(RequestResponse::fromEntity);
+    }
+
+    @Transactional
+    public RequestResponse createResidentRequest(String title, String description, String issueType, String priorityStr, String location, String occurrenceTimeStr, List<MultipartFile> files) {
+        if (title == null || title.trim().isEmpty()) throw new IllegalArgumentException("Title is required");
+        if (description == null || description.trim().isEmpty()) throw new IllegalArgumentException("Description is required");
+        if (issueType == null || issueType.trim().isEmpty()) throw new IllegalArgumentException("Issue Type is required");
+
+        String email = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        User user = userRepository.findByEmail(email).orElseThrow(() -> new RuntimeException("User not found"));
+
+        Request.Priority priority = Request.Priority.LOW;
+        if (priorityStr != null) {
+            try {
+                priority = Request.Priority.valueOf(priorityStr.toUpperCase());
+            } catch (Exception e) {}
+        }
+
+        LocalDateTime occurrenceTime = null;
+        if (occurrenceTimeStr != null && !occurrenceTimeStr.isEmpty()) {
+            try {
+                occurrenceTime = LocalDateTime.parse(occurrenceTimeStr);
+            } catch (Exception e) {}
+        }
+
+        Request request = Request.builder()
+                .user(user)
+                .title(title)
+                .description(description)
+                .issueType(issueType)
+                .priority(priority)
+                .location(location)
+                .occurrenceTime(occurrenceTime)
+                .status(Request.RequestStatus.PENDING)
+                .createdAt(LocalDateTime.now())
+                .media(new ArrayList<>())
+                .build();
+
+        if (files != null && !files.isEmpty()) {
+            for (MultipartFile file : files) {
+                if (file.getSize() > MAX_FILE_SIZE) {
+                    throw new RuntimeException("File size exceeds limit of 10MB: " + file.getOriginalFilename());
+                }
+                String url = cloudinaryService.uploadFile(file, "requests");
+                RequestMedia.MediaType type = determineMediaType(file);
+                RequestMedia media = RequestMedia.builder()
+                        .url(url)
+                        .mediaType(type)
+                        .request(request)
+                        .build();
+                request.getMedia().add(media);
+            }
+        }
+        return RequestResponse.fromEntity(requestRepository.save(request));
+    }
+
     @Transactional
     public RequestResponse createRequest(Integer userId, String title, String description, List<MultipartFile> files) {
         User user = userRepository.findById(userId)

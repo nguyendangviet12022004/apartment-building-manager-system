@@ -6,6 +6,7 @@ import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/bills_page.dart';
 import 'service_list_screen.dart';
+import '../screens/payment_history_screen.dart';
 
 class ResidentHomeScreen extends StatelessWidget {
   const ResidentHomeScreen({super.key});
@@ -248,6 +249,8 @@ class Body extends StatelessWidget {
       (Icons.calendar_today, 'Booking', null),
       (Icons.newspaper, 'News', null),
       (Icons.chat_bubble_outline, 'Feedback', null),
+      (Icons.inventory_2_outlined, 'Parcels', AppRoutes.paymentHistory),
+      (Icons.chat_bubble_outline, 'Requests', AppRoutes.requestList),
       (Icons.inventory_2_outlined, 'Parcels', null),
     ];
 
@@ -337,6 +340,23 @@ class Body extends StatelessWidget {
       Navigator.push(
         context,
         MaterialPageRoute(builder: (_) => BillsPage(apartmentId: apartmentId)),
+      );
+      return;
+    }
+
+    if (route == AppRoutes.paymentHistory) {
+      final apartmentId = context.read<AuthProvider>().apartmentId;
+      if (apartmentId == null) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Apartment not found')));
+        return;
+      }
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PaymentHistoryScreen(apartmentId: apartmentId),
+        ),
       );
       return;
     }

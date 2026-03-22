@@ -54,6 +54,36 @@ class ManagerInvoiceService {
     return ManagerDetail.fromJson(jsonDecode(res.body));
   }
 
+  // PUT /api/v1/invoices/{id} — edit invoice
+  Future<void> editInvoice(
+    int invoiceId, {
+    required DateTime dueDate,
+    required double lateFee,
+    required String status,
+    required List<Map<String, dynamic>> items,
+  }) async {
+    final res = await http.put(
+      Uri.parse('$_base/$invoiceId'),
+      headers: await _authHeaders(),
+      body: jsonEncode({
+        'dueDate': dueDate.toIso8601String(),
+        'lateFee': lateFee,
+        'status': status,
+        'items': items,
+      }),
+    );
+    _check(res);
+  }
+
+  // DELETE /api/v1/invoices/{id}
+  Future<void> deleteInvoice(int invoiceId) async {
+    final res = await http.delete(
+      Uri.parse('$_base/$invoiceId'),
+      headers: await _authHeaders(),
+    );
+    _check(res);
+  }
+
   void _check(http.Response res) {
     if (res.statusCode < 200 || res.statusCode >= 300) {
       throw Exception('API ${res.statusCode}: ${res.body}');
