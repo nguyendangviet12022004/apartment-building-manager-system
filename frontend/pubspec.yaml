@@ -19,6 +19,7 @@ dependencies:
   url_launcher: ^6.3.0
   image_picker: ^1.0.7
   http_parser: ^4.0.2
+  table_calendar: ^3.0.9
 
 dev_dependencies:
   flutter_test:
