@@ -7,6 +7,7 @@ import com.google.firebase.messaging.FirebaseMessaging;
 import com.google.firebase.messaging.FirebaseMessagingException;
 import com.google.firebase.messaging.Message;
 import com.viet.backend.model.Notification;
+import com.viet.backend.model.Role;
 import com.viet.backend.model.User;
 import com.viet.backend.repository.NotificationRepository;
 import com.viet.backend.repository.UserRepository;
@@ -82,6 +83,14 @@ public class NotificationService {
     @Transactional
     public void sendToAll(String title, String content, String detail, Map<String, String> data) {
         List<User> users = userRepository.findAll();
+        for (User user : users) {
+            sendNotification(user.getId(), title, content, detail, data);
+        }
+    }
+
+    @Transactional
+    public void sendToRole(Role role, String title, String content, String detail, Map<String, String> data) {
+        List<User> users = userRepository.findByRole(role);
         for (User user : users) {
             sendNotification(user.getId(), title, content, detail, data);
         }

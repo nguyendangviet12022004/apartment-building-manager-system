@@ -2,10 +2,8 @@ package com.viet.backend.service;
 
 import com.viet.backend.dto.BookingDTO;
 import com.viet.backend.model.Apartment;
-import com.viet.backend.model.Notification;
 import com.viet.backend.model.ServiceBooking;
 import com.viet.backend.model.User;
-import com.viet.backend.repository.NotificationRepository;
 import com.viet.backend.repository.ServiceBookingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -27,7 +25,7 @@ import java.util.stream.Collectors;
 public class BookingManagementService {
 
     private final ServiceBookingRepository serviceBookingRepository;
-    private final NotificationRepository notificationRepository;
+    private final NotificationService notificationService;
 
     /**
      * Get all bookings with filtering and pagination
@@ -313,15 +311,13 @@ public class BookingManagementService {
                     ? String.format("Your booking for %s on %s has been approved", serviceName, bookingTime)
                     : String.format("Your booking for %s on %s has been rejected", serviceName, bookingTime);
             
-            Notification notification = Notification.builder()
-                    .user(user)
-                    .title(title)
-                    .content(content)
-                    .detail(String.format("Booking ID: %d\nService: %s\nTime: %s", 
-                            booking.getId(), serviceName, bookingTime))
-                    .build();
+            java.util.Map<String, String> data = java.util.Map.of(
+                "bookingId", booking.getId().toString(),
+                "click_action", "OPEN_BOOKING"
+            );
             
-            notificationRepository.save(notification);
+            notificationService.sendNotification(user.getId(), title, content, content, data);
+            log.info("Notification sent via NotificationService to user {} for booking {}", user.getId(), booking.getId());
             log.info("Notification sent to user {} for booking {}", user.getId(), booking.getId());
             
         } catch (Exception e) {

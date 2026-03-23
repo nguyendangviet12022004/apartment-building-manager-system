@@ -4,6 +4,7 @@ import com.viet.backend.dto.RequestResponse;
 import com.viet.backend.model.AdminResponse;
 import com.viet.backend.model.Request;
 import com.viet.backend.model.RequestMedia;
+import com.viet.backend.model.Role;
 import com.viet.backend.model.User;
 import com.viet.backend.repository.RequestRepository;
 import com.viet.backend.repository.UserRepository;
@@ -26,6 +27,7 @@ public class RequestService {
     private final RequestRepository requestRepository;
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
+    private final NotificationService notificationService;
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
 
@@ -135,7 +137,18 @@ public class RequestService {
                 request.getMedia().add(media);
             }
         }
-        return RequestResponse.fromEntity(requestRepository.save(request));
+        Request savedRequest = requestRepository.save(request);
+
+        // Notify Admins and Managers
+        String notifContent = String.format("Resident %s %s has a new request: %s", user.getFirstname(), user.getLastname(), title);
+        java.util.Map<String, String> data = java.util.Map.of(
+            "requestId", savedRequest.getId().toString(),
+            "click_action", "OPEN_REQUEST"
+        );
+        notificationService.sendToRole(Role.ADMIN, "New Request", notifContent, description, data);
+        notificationService.sendToRole(Role.MANAGER, "New Request", notifContent, description, data);
+
+        return RequestResponse.fromEntity(savedRequest);
     }
 
     @Transactional
@@ -205,7 +218,19 @@ public class RequestService {
         adminResponse.setRespondedAt(LocalDateTime.now());
         adminResponse.setAdmin(admin);
 
-        return RequestResponse.fromEntity(requestRepository.save(request));
+        Request savedRequest = requestRepository.save(request);
+
+        // Notify Resident
+        String statusLabel = status == Request.RequestStatus.APPROVED ? "approved" : "updated to " + status;
+        String titleNotif = "Request Status Updated";
+        String contentNotif = String.format("Your request '%s' has been %s", request.getTitle(), statusLabel);
+        java.util.Map<String, String> data = java.util.Map.of(
+            "requestId", requestId.toString(),
+            "click_action", "OPEN_REQUEST"
+        );
+        notificationService.sendNotification(request.getUser().getId(), titleNotif, contentNotif, responseContent, data);
+
+        return RequestResponse.fromEntity(savedRequest);
     }
 
     @Transactional
@@ -222,6 +247,17 @@ public class RequestService {
         }
 
         request.setSolvedBy(solvedBy);
-        return RequestResponse.fromEntity(requestRepository.save(request));
+        Request savedRequest = requestRepository.save(request);
+
+        // Notify Resident
+        java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy HH:mm");
+        String contentNotif = String.format("Completion time for request '%s' set for: %s", request.getTitle(), solvedBy.format(formatter));
+        java.util.Map<String, String> data = java.util.Map.of(
+            "requestId", requestId.toString(),
+            "click_action", "OPEN_REQUEST"
+        );
+        notificationService.sendNotification(request.getUser().getId(), "Completion Time Set", contentNotif, contentNotif, data);
+
+        return RequestResponse.fromEntity(savedRequest);
     }
 }

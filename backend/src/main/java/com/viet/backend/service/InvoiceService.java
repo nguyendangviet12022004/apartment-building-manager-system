@@ -27,6 +27,7 @@ public class InvoiceService {
     private final InvoiceRepository invoiceRepository;
     private final ApartmentRepository apartmentRepository;
     private final ServiceRepository serviceRepository;
+    private final NotificationService notificationService;
 
     public InvoiceDTO.Summary getSummary(Long apartmentId) {
         long unpaid  = invoiceRepository.countByApartmentIdAndStatus(apartmentId, InvoiceStatus.UNPAID);
@@ -113,7 +114,21 @@ public class InvoiceService {
         items.forEach(item -> item.setInvoice(invoice));
         invoice.setItems(items);
 
-        return toResponse(invoiceRepository.save(invoice));
+        Invoice savedInvoice = invoiceRepository.save(invoice);
+
+        // Notify Resident if apartment has one
+        if (apartment.getResident() != null && apartment.getResident().getUser() != null) {
+            User resident = apartment.getResident().getUser();
+            String titleNotif = "New Invoice Received";
+            String contentNotif = String.format("A new invoice %s has been created for your apartment %s", code, apartment.getApartmentCode());
+            java.util.Map<String, String> data = java.util.Map.of(
+                "invoiceId", savedInvoice.getId().toString(),
+                "click_action", "OPEN_INVOICE"
+            );
+            notificationService.sendNotification(resident.getId(), titleNotif, contentNotif, contentNotif, data);
+        }
+
+        return toResponse(savedInvoice);
     }
 
     @Transactional
@@ -189,7 +204,21 @@ public class InvoiceService {
         Invoice inv = invoiceRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Invoice not found: " + id));
         inv.setStatus(req.getStatus());
-        return toResponse(invoiceRepository.save(inv));
+        Invoice savedInvoice = invoiceRepository.save(inv);
+
+        // Notify Resident about payment success
+        if (req.getStatus() == InvoiceStatus.PAID && inv.getApartment() != null && inv.getApartment().getResident() != null) {
+            User resident = inv.getApartment().getResident().getUser();
+            String titleNotif = "Invoice Payment Confirmed";
+            String contentNotif = String.format("Your payment for invoice %s has been successfully received", inv.getInvoiceCode());
+            java.util.Map<String, String> data = java.util.Map.of(
+                "invoiceId", inv.getId().toString(),
+                "click_action", "OPEN_INVOICE"
+            );
+            notificationService.sendNotification(resident.getId(), titleNotif, contentNotif, contentNotif, data);
+        }
+
+        return toResponse(savedInvoice);
     }
 
     public void delete(Long id) {

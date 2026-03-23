@@ -282,7 +282,7 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
     (Icons.receipt_long, 'Invoice', AppRoutes.invoiceList), // ← updated
     (Icons.spa_outlined, 'Amenity', AppRoutes.bookingRequests), // ← updated
     (Icons.campaign_outlined, 'News', AppRoutes.createNotification),
-    (Icons.bar_chart, 'Report', null),
+    (Icons.assignment_outlined, 'Requests', AppRoutes.adminRequests),
     (Icons.people_outline, 'Resident', AppRoutes.residentManagement),
   ];
 
