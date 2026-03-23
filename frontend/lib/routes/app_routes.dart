@@ -17,6 +17,9 @@ import '../screens/payment_history_screen.dart';
 import '../screens/request_detail_response_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/resident_management_screen.dart';
+import '../screens/booking_requests_screen.dart';
+import '../screens/booking_calendar_screen.dart';
+import '../screens/booking_detail_screen.dart';
 import '../models/request_model.dart';
 import '../screens/add_apartment_screen.dart';
 import '../screens/apartment_list_screen.dart';
@@ -46,6 +49,9 @@ class AppRoutes {
   static const String addApartment = '/add-apartment';
   static const String profile = '/profile';
   static const String residentManagement = '/resident-management';
+  static const String bookingRequests = '/booking-requests';
+  static const String bookingCalendar = '/booking-calendar';
+  static const String bookingDetail = '/booking-detail';
   static const String apartmentList = '/apartments';
   static const String apartmentDetail = '/apartment-detail';
   static const String editApartment = '/edit-apartment';
@@ -70,6 +76,12 @@ class AppRoutes {
     addApartment: (context) => const AddApartmentScreen(),
     profile: (context) => const ProfileScreen(),
     residentManagement: (context) => const ResidentManagementScreen(),
+    bookingRequests: (context) => const BookingRequestsScreen(),
+    bookingCalendar: (context) => const BookingCalendarScreen(),
+    bookingDetail: (context) {
+      final bookingId = ModalRoute.of(context)!.settings.arguments as int;
+      return BookingDetailScreen(bookingId: bookingId);
+    },
     apartmentList: (context) => const ApartmentListScreen(),
     requestList: (context) => const RequestListScreen(),
     createRequest: (context) => const CreateRequestScreen(),

@@ -26,7 +26,7 @@ class Body extends StatelessWidget {
   static const _primary = Color(0xFF88304E);
   static const _dark = Color(0xFF522546);
   static const _orange = Color(0xFFF68048);
-  static const _blue = Color(0xFF2845D6);
+  static const _red = Color(0xFF88304E);
   static const _grey = Color(0xFF9CA3AF);
   static const _darkText = Color(0xFF111827);
 
@@ -258,7 +258,7 @@ class Body extends StatelessWidget {
   // 👇 Invoice route thay đổi từ AppRoutes.createInvoice → AppRoutes.invoiceList
   static const _row1 = [
     (Icons.receipt_long, 'Invoice', AppRoutes.invoiceList), // ← updated
-    (Icons.spa_outlined, 'Amenity', null),
+    (Icons.spa_outlined, 'Amenity', AppRoutes.bookingRequests), // ← updated
     (Icons.newspaper, 'News', null),
     (Icons.bar_chart, 'Report', null),
     (Icons.people_outline, 'Resident', AppRoutes.residentManagement),
@@ -389,7 +389,7 @@ class Body extends StatelessWidget {
               Text(
                 'View All',
                 style: TextStyle(
-                  color: _blue,
+                  color: _red,
                   fontSize: 14,
                   fontWeight: FontWeight.w500,
                   fontFamily: 'Inter',
@@ -494,29 +494,49 @@ class Body extends StatelessWidget {
         top: false,
         child: Padding(
           padding: const EdgeInsets.symmetric(vertical: 8),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: _navItems.map((item) {
-              final color = item.$3 ? _blue : _grey;
-              return Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(item.$1, color: color, size: 26),
-                  const SizedBox(height: 4),
-                  Text(
-                    item.$2,
-                    style: TextStyle(
-                      color: color,
-                      fontSize: 12,
-                      fontWeight: item.$3 ? FontWeight.w600 : FontWeight.w400,
-                      fontFamily: 'Inter',
-                    ),
-                  ),
-                ],
-              );
-            }).toList(),
+          child: Builder(
+            builder: (ctx) => Row(
+              mainAxisAlignment: MainAxisAlignment.spaceAround,
+              children: [
+                _buildNavItem(ctx, Icons.home, 'Home', true, null),
+                _buildNavItem(ctx, Icons.grid_view, 'Calendar', false, AppRoutes.bookingCalendar),
+                _buildNavItem(ctx, Icons.receipt_long, 'Invoices', false, AppRoutes.invoiceList),
+                _buildNavItem(ctx, Icons.person_outline, 'Profile', false, AppRoutes.profile),
+              ],
+            ),
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildNavItem(
+    BuildContext context,
+    IconData icon,
+    String label,
+    bool isActive,
+    String? route,
+  ) {
+    final color = isActive ? _red : _grey;
+    return InkWell(
+      onTap: route != null
+          ? () => Navigator.of(context, rootNavigator: true).pushNamed(route)
+          : null,
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, color: color, size: 26),
+          const SizedBox(height: 4),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 12,
+              fontWeight: isActive ? FontWeight.w600 : FontWeight.w400,
+              fontFamily: 'Inter',
+            ),
+          ),
+        ],
       ),
     );
   }

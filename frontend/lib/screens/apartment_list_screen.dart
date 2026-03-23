@@ -131,7 +131,7 @@ class _ApartmentListScreenState extends State<ApartmentListScreen> {
           onPressed: () => Navigator.pop(context),
         ),
         title: const Text(
-          'Skyline Velvet',
+          'Bulding Management',
           style: TextStyle(
             color: Color(0xFF7A2A46),
             fontWeight: FontWeight.bold,
