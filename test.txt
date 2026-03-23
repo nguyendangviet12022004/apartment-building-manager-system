@@ -1,1 +1,211 @@
-hello 
+@startuml Class Diagram - Authentication
+
+package "com.viet.backend" {
+
+    package "controller" {
+        class AuthenticationController {
+            - AuthenticationService service
+            + register(request: RegisterRequest): ResponseEntity<AuthenticationResponse>
+            + authenticate(request: AuthenticationRequest): ResponseEntity<AuthenticationResponse>
+            + forgotPassword(request: ForgotPasswordRequest): ResponseEntity<String>
+            + verifyCode(request: VerifyCodeRequest): ResponseEntity<String>
+            + resetPassword(request: ResetPasswordRequest): ResponseEntity<String>
+            + changePassword(request: ChangePasswordRequest): ResponseEntity<String>
+        }
+    }
+
+    package "service" {
+        class AuthenticationService {
+            - UserRepository repository
+            - PasswordEncoder passwordEncoder
+            - JwtService jwtService
+            - AuthenticationManager authenticationManager
+            - UserMapper userMapper
+            - ApartmentAccessCodeService accessCodeService
+            - PasswordResetCodeRepository codeRepository
+            - EmailService emailService
+            + register(request: RegisterRequest): AuthenticationResponse
+            + authenticate(request: AuthenticationRequest): AuthenticationResponse
+            + changePassword(request: ChangePasswordRequest): void
+            + generateResetCode(email: String): void
+            + verifyResetCode(email: String, code: String): void
+            + resetPassword(email: String, code: String, newPassword: String): void
+        }
+    }
+
+    package "repository" {
+        interface UserRepository {
+            + findByEmail(email: String): Optional<User>
+            + save(user: User): User
+        }
+        
+        interface PasswordResetCodeRepository {
+            + findByCodeAndUser_EmailAndIsActiveTrue(code: String, email: String): Optional<PasswordResetCode>
+            + deleteByUser(user: User): void
+            + save(code: PasswordResetCode): PasswordResetCode
+        }
+        
+        interface ApartmentAccessCodeRepository {
+            + findByEmailAndApartment_IdAndIsActiveTrue(email: String, apartmentId: Integer): Optional<ApartmentAccessCode>
+        }
+    }
+
+    package "model" {
+        class User {
+            - id: Integer
+            - firstName: String
+            - lastName: String
+            - email: String
+            - password: String
+            - role: Role
+        }
+        
+        class PasswordResetCode {
+            - id: Integer
+            - code: String
+            - expiryDate: LocalDateTime
+            - isActive: Boolean
+            - user: User
+        }
+    }
+    
+    package "dto" {
+        class AuthenticationRequest
+        class AuthenticationResponse
+        class RegisterRequest
+        class ChangePasswordRequest
+        class ForgotPasswordRequest
+        class VerifyCodeRequest
+        class ResetPasswordRequest
+    }
+
+}
+
+AuthenticationController --> AuthenticationService
+AuthenticationController ..> AuthenticationRequest: "Uses"
+AuthenticationController ..> AuthenticationResponse: "Returns"
+AuthenticationService --> UserRepository
+AuthenticationService --> PasswordResetCodeRepository
+AuthenticationService --> ApartmentAccessCodeRepository
+AuthenticationService ..> User: "Manages"
+AuthenticationService ..> PasswordResetCode: "Manages"
+UserRepository ..> User: "Queries/Saves"
+PasswordResetCodeRepository ..> PasswordResetCode: "Queries/Saves"
+
+@enduml
+
+
+
+@startuml Sequence Diagram - Login (Authentication)
+
+actor User as U
+participant "AuthenticationController" as C
+participant "AuthenticationService" as S
+participant "AuthenticationManager" as AM
+participant "UserRepository" as R
+participant "JwtService" as JWT
+
+U -> C: POST /api/v1/auth/login \n (AuthenticationRequest)
+activate C
+
+C -> S: authenticate(AuthenticationRequest)
+activate S
+
+S -> AM: authenticate(UsernamePasswordAuthenticationToken)
+activate AM
+AM --> S: AuthenticationToken
+deactivate AM
+
+S -> R: findByEmail(request.getEmail())
+activate R
+R --> S: Optional<User>
+deactivate R
+
+S -> JWT: generateToken(extraClaims, user)
+activate JWT
+JWT --> S: accessToken
+deactivate JWT
+
+S -> JWT: generateRefreshToken(user)
+activate JWT
+JWT --> S: refreshToken
+deactivate JWT
+
+S --> C: AuthenticationResponse
+deactivate S
+
+C --> U: 200 OK \n (AuthenticationResponse)
+deactivate C
+
+@enduml
+
+
+
+@startuml Sequence Diagram - Register
+
+actor User as U
+participant "AuthenticationController" as C
+participant "AuthenticationService" as S
+participant "UserMapper" as UM
+participant "PasswordEncoder" as PE
+participant "UserRepository" as R
+participant "ApartmentAccessCodeRepository" as AACR
+participant "JwtService" as JWT
+
+U -> C: POST /api/v1/auth/register \n (RegisterRequest)
+activate C
+
+C -> S: register(RegisterRequest)
+activate S
+
+S -> S: validatePassword(request)
+
+S -> UM: toEntity(request)
+activate UM
+UM --> S: User (entity)
+deactivate UM
+
+S -> PE: encode(request.getPassword())
+activate PE
+PE --> S: encodedPassword
+deactivate PE
+
+S -> S: user.setPassword(encodedPassword)
+
+alt request.getApartmentId() != null
+    S -> AACR: findByEmailAndApartment_IdAndIsActiveTrue(...)
+    activate AACR
+    AACR --> S: Optional<ApartmentAccessCode>
+    deactivate AACR
+    S -> S: user.setRole(Role.RESIDENT)
+else else
+    S -> S: user.setRole(request.getRole())
+end
+
+S -> R: save(user)
+activate R
+R --> S: savedUser
+deactivate R
+
+alt validCode != null (has invitation)
+    S -> S: linkUserToApartment(...)
+    S -> AACR: save(validCode)
+end
+
+S -> JWT: generateToken(extraClaims, savedUser)
+activate JWT
+JWT --> S: accessToken
+deactivate JWT
+
+S -> JWT: generateRefreshToken(savedUser)
+activate JWT
+JWT --> S: refreshToken
+deactivate JWT
+
+S --> C: AuthenticationResponse
+deactivate S
+
+C --> U: 200 OK \n (AuthenticationResponse)
+deactivate C
+
+@enduml

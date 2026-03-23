@@ -61,12 +61,12 @@ public class ApartmentService {
         for (com.viet.backend.dto.BulkCreateApartmentRequest.ApartmentUnitRequest unitReq : request.getUnits()) {
             String floorPart = String.format("%02d", request.getFloor()) + String.format("%02d", unitCounter);
             String base = block.getBlockCode() + "-" + floorPart;
-            
+
             int sum = 0;
             for (char c : base.toCharArray()) {
                 sum += c;
             }
-            
+
             String checksum = Integer.toHexString(sum).toUpperCase();
             while (checksum.length() < 3) {
                 checksum = "0" + checksum;
@@ -74,7 +74,7 @@ public class ApartmentService {
             if (checksum.length() > 3) {
                 checksum = checksum.substring(checksum.length() - 3);
             }
-            
+
             String code = base + "-" + checksum;
 
             if (apartmentRepository.findByApartmentCodeWithBlock(code).isPresent()) {
@@ -102,9 +102,8 @@ public class ApartmentService {
         apartmentRepository.saveAll(apartmentsToSave);
 
         return java.util.Map.of(
-            "totalCreated", createdCodes.size(),
-            "createdCodes", createdCodes
-        );
+                "totalCreated", createdCodes.size(),
+                "createdCodes", createdCodes);
     }
 
     @Transactional
@@ -139,78 +138,44 @@ public class ApartmentService {
     }
 
     private void validateApartmentCode(String code, Block block, Integer floor) {
-        // Enforce BR-01: Exactly 12 characters, format XXX-XXXX-XXX
-        if (code == null || !code.matches("^[A-Z0-9]{3}-[0-9]{4}-[A-Z0-9]{3}$")) {
-            throw new RuntimeException("Invalid apartment code format. Expected XXX-XXXX-XXX (Exactly 12 chars)");
+        // Enforce format BlockCode-Floor-Unit (e.g. VIN-05-01)
+        if (code == null || !code.matches("^[A-Z0-9]{3}-\\d{2}-\\d{2}$")) {
+            throw new RuntimeException("Invalid apartment code format. Expected XXX-XX-XX (e.g. VIN-05-01)");
         }
 
         String[] segments = code.split("-");
 
         // 1st segment: Building code (3 characters)
         if (!segments[0].equalsIgnoreCase(block.getBlockCode())) {
-            throw new RuntimeException(
-                    "First segment (" + segments[0] + ") must match building code: " + block.getBlockCode());
+            throw new RuntimeException("First segment (" + segments[0] + ") must match building code: " + block.getBlockCode());
         }
 
-        // 2nd segment: Floor (2 digits) + Unit (2 digits)
-        int codeFloor = Integer.parseInt(segments[1].substring(0, 2));
+        // 2nd segment: Floor (2 digits)
+        int codeFloor = Integer.parseInt(segments[1]);
         if (codeFloor != floor) {
-            throw new RuntimeException("Floor segment (" + codeFloor + ") does not match provided floor: " + floor);
-        }
-
-        // 3rd segment: Checksum verification
-        if (!isValidChecksum(segments[0] + "-" + segments[1], segments[2])) {
-            throw new RuntimeException("Invalid checksum segment. Typos detected.");
+            throw new RuntimeException("Floor segment (" + segments[1] + ") does not match provided floor: " + floor);
         }
     }
 
-    private boolean isValidChecksum(String data, String checksum) {
-        int sum = 0;
-        for (char c : data.toCharArray())
-            sum += c;
-        String expected = Integer.toHexString(sum).toUpperCase();
-        while (expected.length() < 3)
-            expected = "0" + expected;
-        if (expected.length() > 3)
-            expected = expected.substring(expected.length() - 3);
-
-        return checksum.equals(expected);
-    }
 
     private String generateApartmentCode(Block block, Integer floor) {
         String blockCode = block.getBlockCode();
         int unitCounter = 1;
         String code = "";
-        
+
         while (true) {
-            String floorPart = String.format("%02d", floor) + String.format("%02d", unitCounter);
-            String base = blockCode + "-" + floorPart;
-            
-            int sum = 0;
-            for (char c : base.toCharArray()) {
-                sum += c;
-            }
-            
-            String checksum = Integer.toHexString(sum).toUpperCase();
-            while (checksum.length() < 3) {
-                checksum = "0" + checksum;
-            }
-            if (checksum.length() > 3) {
-                checksum = checksum.substring(checksum.length() - 3);
-            }
-            
-            code = base + "-" + checksum;
-            
+            code = String.format("%s-%02d-%02d", blockCode, floor, unitCounter);
+
             if (apartmentRepository.findByApartmentCodeWithBlock(code).isEmpty()) {
                 break;
             }
-            
+
             unitCounter++;
             if (unitCounter > 99) {
                 throw new RuntimeException("Maximum units per floor reached.");
             }
         }
-        
+
         return code;
     }
 

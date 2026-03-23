@@ -77,9 +77,9 @@ public class DataSeeder implements CommandLineRunner {
             for (int f = 1; f <= 5; f++) {
                 for (int r = 1; r <= 3; r++) {
                     String floorStr = String.format("%02d", f);
-                    String code = String.format("%s-%s%s-A%d%s", b.getBlockCode(), floorStr, floorStr, f, r > 1 ? "B" : "C");
+                    String unitStr = String.format("%02d", r);
+                    String ac = String.format("%s-%s-%s", b.getBlockCode(), floorStr, unitStr);
                     
-                    final String ac = code;
                     final int flr = f;
                     Optional<Apartment> optApt = apartmentRepository.findAll().stream().filter(a -> a.getApartmentCode().equals(ac)).findFirst();
                     Apartment apt;

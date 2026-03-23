@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Apartment Manager - Architecture Diagrams</title>
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
+        mermaid.initialize({ startOnLoad: true, theme: 'default', securityLevel: 'loose' });
+    </script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: #f4f6f8;
+            padding: 20px;
+            text-align: center;
+            margin: 0;
+        }
+
+        .diagram-container {
+            max-width: 1000px;
+            margin: 0 auto 40px auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+            overflow-x: auto;
+        }
+
+        h1 {
+            color: #1a1a1a;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+
+        p.desc {
+            color: #666;
+            margin-bottom: 40px;
+        }
+
+        h2 {
+            color: #444;
+            border-bottom: 2px solid #eef0f2;
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            font-weight: 500;
+            font-size: 20px;
+        }
+
+        .mermaid {
+            text-align: center;
+            display: flex;
+            justify-content: center;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>All Functions Architecture Diagrams</h1>
+    <p class="desc">Standard Spring Boot Architecture: Controller -> Service -> Repository</p>
+
+    <!-- CLASS DIAGRAMS -->
+    <div class="diagram-container">
+        <h2>1. Architecture Class Diagram (Overview)</h2>
+        <div class="mermaid">
+            classDiagram
+            class AuthenticationController {
+            +register(request)
+            +authenticate(request)
+            +forgotPassword(request)
+            +changePassword(request)
+            }
+            class AuthenticationService {
+            +register(request)
+            +authenticate(request)
+            +forgotPassword(email)
+            +changePassword(request)
+            }
+            class RequestController {
+            +getRequests(filter)
+            +updateStatus(id)
+            }
+            class RequestService {
+            +getRequests()
+            +updateStatus()
+            }
+            class NotificationController {
+            +getUserNotifications(userId)
+            +markAllRead(userId)
+            }
+            class NotificationService {
+            +getUserNotifications()
+            }
+            class ApartmentAccessCodeController {
+            +linkApartment(code)
+            }
+            class ApartmentAccessCodeService {
+            +linkUserToApartment()
+            }
+
+            class UserRepository
+            <<interface>> UserRepository
+                class RequestRepository
+                <<interface>> RequestRepository
+                    class NotificationRepository
+                    <<interface>> NotificationRepository
+                        class ApartmentAccessCodeRepository
+                        <<interface>> ApartmentAccessCodeRepository
+
+                            AuthenticationController --> AuthenticationService
+                            AuthenticationService --> UserRepository
+                            RequestController --> RequestService
+                            RequestService --> RequestRepository
+                            NotificationController --> NotificationService
+                            NotificationService --> NotificationRepository
+                            ApartmentAccessCodeController --> ApartmentAccessCodeService
+                            ApartmentAccessCodeService --> ApartmentAccessCodeRepository
+                            ApartmentAccessCodeService --> UserRepository
+        </div>
+    </div>
+
+
+    <!-- SEQUENCE DIAGRAMS -->
+
+    <div class="diagram-container">
+        <h2>2. Auth: Sequence Diagram - Login</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as AuthController
+            participant S as AuthService
+            participant R as UserRepository
+            participant JWT as JwtService
+
+            U->>C: POST /api/v1/auth/login
+            activate C
+            C->>S: authenticate()
+            activate S
+            S->>R: findByEmail(email)
+            activate R
+            R-->>S: return User
+            deactivate R
+            S->>JWT: generateToken(user)
+            activate JWT
+            JWT-->>S: token
+            deactivate JWT
+            S-->>C: AuthResponse(token)
+            deactivate S
+            C-->>U: 200 OK
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>3. Auth: Sequence Diagram - Register & Link Apartment</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as AuthController
+            participant S as AuthService
+            participant R as UserRepository
+            participant AR as AccessCodeRepository
+
+            U->>C: POST /api/v1/auth/register
+            activate C
+            C->>S: register(request)
+            activate S
+
+            alt Has Apartment ID
+            S->>AR: validateAccessCode()
+            activate AR
+            AR-->>S: valid
+            deactivate AR
+            S->>S: setRole(RESIDENT)
+            else No Apartment ID
+            S->>S: setRole(request.role)
+            end
+
+            S->>R: save(User)
+            activate R
+            R-->>S: savedUser
+            deactivate R
+
+            S-->>C: AuthResponse
+            deactivate S
+            C-->>U: 200 OK
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>4. Auth: Sequence Diagram - Forgot Password</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as AuthController
+            participant S as AuthService
+            participant PRR as PasswordResetRepository
+            participant M as EmailService
+
+            U->>C: POST /api/v1/auth/password/forgot
+            activate C
+            C->>S: generateResetCode(email)
+            activate S
+            S->>PRR: deleteByUser(user)
+            S->>S: generate 6-digit code
+            S->>PRR: save(PasswordResetCode)
+            S->>M: sendPasswordResetEmail(email, code)
+            S-->>C: void
+            deactivate S
+            C-->>U: 200 OK "Email Sent"
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>5. Auth: Sequence Diagram - Change Password</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as AuthController
+            participant S as AuthService
+            participant R as UserRepository
+
+            U->>C: POST /api/v1/auth/password/change
+            activate C
+            C->>S: changePassword()
+            activate S
+            S->>R: findByEmail()
+            activate R
+            R-->>S: user
+            deactivate R
+            S->>S: check oldPassword matches
+            S->>S: encode newPassword
+            S->>R: save(user)
+            S-->>C: void
+            deactivate S
+            C-->>U: 200 OK "Password Changed"
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>6. Notification: Sequence Diagram - View Notification List</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as NotificationController
+            participant S as NotificationService
+            participant R as NotificationRepository
+
+            U->>C: GET /api/v1/test-notifications/user
+            activate C
+            C->>S: getUserNotifications(userId)
+            activate S
+            S->>R: findByUserIdOrderByDateDesc()
+            activate R
+            R-->>S: List of Notifications
+            deactivate R
+            S-->>C: List of NotificationDTOs
+            deactivate S
+            C-->>U: 200 OK (List)
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>7. Request: Sequence Diagram - Request List & Filter</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User
+            participant C as RequestController
+            participant S as RequestService
+            participant R as RequestRepository
+
+            U->>C: GET /api/v1/requests (filter)
+            activate C
+            C->>S: getRequests(filter Status)
+            activate S
+
+            alt filter == "All"
+            S->>R: findAll()
+            else filter == "Pending/Processing/Done"
+            S->>R: findByStatus(status)
+            end
+
+            activate R
+            R-->>S: List of Requests
+            deactivate R
+            S-->>C: List of RequestDTOs
+            deactivate S
+            C-->>U: 200 OK (List)
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>8. Request: Sequence Diagram - Update Request Status</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as User/Admin
+            participant C as RequestController
+            participant S as RequestService
+            participant R as RequestRepository
+
+            U->>C: PUT /api/v1/requests/{id}/status
+            activate C
+            C->>S: updateStatus(id, newStatus)
+            activate S
+            S->>R: findById(id)
+            activate R
+            R-->>S: Request Entity
+            deactivate R
+            S->>S: request.setStatus(newStatus)
+            S->>R: save(Request)
+            S-->>C: void
+            deactivate S
+            C-->>U: 200 OK "Status Updated"
+            deactivate C
+        </div>
+    </div>
+
+    <div class="diagram-container">
+        <h2>9. Dashboard: Sequence Diagram - Enter Access Code</h2>
+        <div class="mermaid">
+            sequenceDiagram
+            actor U as Resident
+            participant C as AccessCodeController
+            participant S as AccessCodeService
+            participant AR as AccessCodeRepository
+            participant UR as UserRepository
+
+            U->>C: POST /api/v1/access-codes/link
+            activate C
+            C->>S: linkUserToApartment(code)
+            activate S
+            S->>AR: findByCodeAndEmail()
+            activate AR
+            AR-->>S: Valid AccessCode
+            deactivate AR
+            S->>S: create Resident entity
+            S->>UR: update user Role
+            S->>AR: set code isActive = false
+            S-->>C: void
+            deactivate S
+            C-->>U: 200 OK "Linked successfully"
+            deactivate C
+        </div>
+    </div>
+
+</body>
+
+</html>

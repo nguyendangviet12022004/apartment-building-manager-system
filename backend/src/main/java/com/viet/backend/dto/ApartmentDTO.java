@@ -21,6 +21,6 @@ public class ApartmentDTO {
 
     // Flattened từ Resident → User
     private Long residentId;
-    private String residentName;  // firstname + lastname
+    private String residentName; // firstname + lastname
     private String residentEmail;
 }

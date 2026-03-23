@@ -97,7 +97,7 @@ class _ApartmentVerifyScreenState extends State<ApartmentVerifyScreen> {
                     controller: _codeController,
                     decoration: InputDecoration(
                       labelText: 'Apartment Access Code',
-                      hintText: 'Enter code',
+                      hintText: 'Example: VIN-0503-A7C',
                       prefixIcon: const Icon(Icons.vpn_key_outlined),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),

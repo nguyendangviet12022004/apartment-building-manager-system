@@ -39,8 +39,26 @@ public class ApartmentAccessCodeService {
         // Deactivate all previous codes
         apartmentAccessCodeRepository.deactivateAllByApartmentId(apartmentId);
 
-        // Generate new 6-digit code
-        String code = String.format("%06d", new Random().nextInt(1000000));
+        // Extract building, floor, unit from apartmentCode (expected format: XXX-XX-XX)
+        String apartmentCode = apartment.getApartmentCode();
+        String[] parts = apartmentCode.split("-");
+        
+        String buildingPart = (parts.length > 0) ? parts[0].toUpperCase() : "UNK";
+        if (buildingPart.length() > 3) buildingPart = buildingPart.substring(0, 3);
+        else if (buildingPart.length() < 3) buildingPart = String.format("%-3s", buildingPart).replace(' ', 'X');
+
+        String floorPart = (parts.length > 1) ? parts[1] : String.format("%02d", apartment.getFloor());
+        String unitPart = (parts.length > 2) ? parts[2] : "01";
+        
+        // Ensure they are 2 digits
+        if (floorPart.length() > 2) floorPart = floorPart.substring(0, 2);
+        if (unitPart.length() > 2) unitPart = unitPart.substring(0, 2);
+
+        String code;
+        do {
+            String checksumPart = generateRandomAlphanumeric(3);
+            code = String.format("%s-%s%s-%s", buildingPart, floorPart, unitPart, checksumPart);
+        } while (apartmentAccessCodeRepository.findByCode(code).isPresent());
 
         ApartmentAccessCode accessCode = ApartmentAccessCode.builder()
                 .code(code)
@@ -58,6 +76,16 @@ public class ApartmentAccessCodeService {
         }
 
         return code;
+    }
+
+    private String generateRandomAlphanumeric(int length) {
+        String chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"; 
+        Random random = new Random();
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < length; i++) {
+            sb.append(chars.charAt(random.nextInt(chars.length())));
+        }
+        return sb.toString();
     }
 
     @Transactional
@@ -88,7 +116,9 @@ public class ApartmentAccessCodeService {
 
     @Transactional
     public Long validateAndActivate(String code) {
-        ApartmentAccessCode accessCode = apartmentAccessCodeRepository.findByCode(code)
+        if (code == null) throw new InvalidCodeException("Code is required");
+        
+        ApartmentAccessCode accessCode = apartmentAccessCodeRepository.findByCode(code.toUpperCase().trim())
                 .orElseThrow(() -> new InvalidCodeException("Code is incorrect or does not exist"));
 
         if (!accessCode.isActive()) {

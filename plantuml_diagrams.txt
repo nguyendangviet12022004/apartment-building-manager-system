@@ -1,0 +1,414 @@
+' ==========================================
+' 1. REGISTER
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Register Sequence
+
+actor "User"
+participant "AuthenticationController"
+participant "AuthenticationService"
+participant "PasswordEncoder"
+participant "ApartmentAccessCodeRepository"
+participant "ApartmentAccessCodeService"
+participant "UserRepository"
+participant "JwtService"
+
+"User" -> "AuthenticationController": POST /api/v1/auth/register
+activate "AuthenticationController"
+"AuthenticationController" -> "AuthenticationService": register(request)
+activate "AuthenticationService"
+"AuthenticationService" -> "PasswordEncoder": encode(password)
+activate "PasswordEncoder"
+"PasswordEncoder" --> "AuthenticationService": encodedPassword
+deactivate "PasswordEncoder"
+
+alt request.apartmentId != null
+    "AuthenticationService" -> "ApartmentAccessCodeRepository": findByEmailAndApartmentId(email, apartmentId)
+    activate "ApartmentAccessCodeRepository"
+    "ApartmentAccessCodeRepository" --> "AuthenticationService": Valid AccessCode
+    deactivate "ApartmentAccessCodeRepository"
+    "AuthenticationService" -> "AuthenticationService": setRole(RESIDENT)
+else No Apartment ID
+    "AuthenticationService" -> "AuthenticationService": setRole(request.role)
+end
+
+"AuthenticationService" -> "UserRepository": save(user)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": savedUser
+deactivate "UserRepository"
+
+alt Valid AccessCode exists
+    "AuthenticationService" -> "ApartmentAccessCodeService": linkUserToApartment(savedUser, apartment)
+    activate "ApartmentAccessCodeService"
+    "ApartmentAccessCodeService" --> "AuthenticationService": void
+    deactivate "ApartmentAccessCodeService"
+    
+    "AuthenticationService" -> "AuthenticationService": mark code inactive
+    "AuthenticationService" -> "ApartmentAccessCodeRepository": save(validCode)
+    activate "ApartmentAccessCodeRepository"
+    "ApartmentAccessCodeRepository" --> "AuthenticationService": saved
+    deactivate "ApartmentAccessCodeRepository"
+end
+
+"AuthenticationService" -> "JwtService": generateToken(user)
+activate "JwtService"
+"JwtService" --> "AuthenticationService": token
+deactivate "JwtService"
+"AuthenticationService" --> "AuthenticationController": AuthResponse(token)
+deactivate "AuthenticationService"
+"AuthenticationController" --> "User": 200 OK
+deactivate "AuthenticationController"
+@enduml
+
+' ==========================================
+' 2. LOGIN
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Login Sequence
+
+actor "User"
+participant "AuthenticationController"
+participant "AuthenticationService"
+participant "AuthenticationManager"
+participant "UserRepository"
+participant "JwtService"
+
+"User" -> "AuthenticationController": POST /api/v1/auth/login
+activate "AuthenticationController"
+"AuthenticationController" -> "AuthenticationService": authenticate(request)
+activate "AuthenticationService"
+"AuthenticationService" -> "AuthenticationManager": authenticate(request)
+activate "AuthenticationManager"
+"AuthenticationManager" --> "AuthenticationService": authenticated token
+deactivate "AuthenticationManager"
+"AuthenticationService" -> "UserRepository": findByEmail(email)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": user
+deactivate "UserRepository"
+"AuthenticationService" -> "JwtService": generateToken(user)
+activate "JwtService"
+"JwtService" --> "AuthenticationService": token
+deactivate "JwtService"
+"AuthenticationService" --> "AuthenticationController": AuthResponse(token)
+deactivate "AuthenticationService"
+"AuthenticationController" --> "User": 200 OK
+deactivate "AuthenticationController"
+@enduml
+
+' ==========================================
+' 3. LOGOUT
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Logout Sequence
+
+actor "User"
+participant "AuthenticationController"
+participant "AuthenticationService"
+participant "UserRepository"
+
+"User" -> "AuthenticationController": POST /api/v1/auth/fcm-token/remove
+activate "AuthenticationController"
+"AuthenticationController" -> "AuthenticationService": removeFcmToken(email)
+activate "AuthenticationService"
+"AuthenticationService" -> "UserRepository": findByEmail(email)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": user
+deactivate "UserRepository"
+"AuthenticationService" -> "AuthenticationService": user.setFcmToken(null)
+"AuthenticationService" -> "UserRepository": save(user)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": saved
+deactivate "UserRepository"
+"AuthenticationService" --> "AuthenticationController": success
+deactivate "AuthenticationService"
+"AuthenticationController" --> "User": 200 OK
+deactivate "AuthenticationController"
+@enduml
+
+' ==========================================
+' 4. CHANGE PASSWORD
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Change Password Sequence
+
+actor "User"
+participant "AuthenticationController"
+participant "AuthenticationService"
+participant "PasswordEncoder"
+participant "UserRepository"
+
+"User" -> "AuthenticationController": POST /api/v1/auth/password/change
+activate "AuthenticationController"
+"AuthenticationController" -> "AuthenticationService": changePassword(request)
+activate "AuthenticationService"
+"AuthenticationService" -> "UserRepository": findByEmail()
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": user
+deactivate "UserRepository"
+"AuthenticationService" -> "PasswordEncoder": matches(oldPassword, user.password)
+activate "PasswordEncoder"
+"PasswordEncoder" --> "AuthenticationService": true
+deactivate "PasswordEncoder"
+"AuthenticationService" -> "PasswordEncoder": encode(newPassword)
+activate "PasswordEncoder"
+"PasswordEncoder" --> "AuthenticationService": encodedPassword
+deactivate "PasswordEncoder"
+"AuthenticationService" -> "UserRepository": save(user)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": saved
+deactivate "UserRepository"
+"AuthenticationService" --> "AuthenticationController": success
+deactivate "AuthenticationService"
+"AuthenticationController" --> "User": 200 OK
+deactivate "AuthenticationController"
+@enduml
+
+' ==========================================
+' 5. FORGOT PASSWORD
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Forgot Password Sequence
+
+actor "User"
+participant "AuthenticationController"
+participant "AuthenticationService"
+participant "UserRepository"
+participant "PasswordResetCodeRepository"
+participant "EmailService"
+
+"User" -> "AuthenticationController": POST /api/v1/auth/password/forgot
+activate "AuthenticationController"
+"AuthenticationController" -> "AuthenticationService": generateResetCode(email)
+activate "AuthenticationService"
+"AuthenticationService" -> "UserRepository": findByEmail(email)
+activate "UserRepository"
+"UserRepository" --> "AuthenticationService": user
+deactivate "UserRepository"
+"AuthenticationService" -> "PasswordResetCodeRepository": deleteByUser(user)
+"AuthenticationService" -> "AuthenticationService": generate 6-digit code
+"AuthenticationService" -> "PasswordResetCodeRepository": save(PasswordResetCode)
+activate "PasswordResetCodeRepository"
+"PasswordResetCodeRepository" --> "AuthenticationService": saved
+deactivate "PasswordResetCodeRepository"
+"AuthenticationService" -> "EmailService": sendPasswordResetEmail(email, code)
+"AuthenticationService" --> "AuthenticationController": success
+deactivate "AuthenticationService"
+"AuthenticationController" --> "User": 200 OK
+deactivate "AuthenticationController"
+@enduml
+
+' ==========================================
+' 6. VIEW NOTIFICATION LIST
+' ==========================================
+
+@startuml
+!pragma messenger true
+title View Notification List Sequence
+
+actor "User"
+participant "NotificationController"
+participant "NotificationService"
+participant "NotificationRepository"
+
+"User" -> "NotificationController": GET /api/v1/notifications/user
+activate "NotificationController"
+"NotificationController" -> "NotificationService": getUserNotifications(userId)
+activate "NotificationService"
+"NotificationService" -> "NotificationRepository": findByUserIdOrderByDateDesc(userId)
+activate "NotificationRepository"
+"NotificationRepository" --> "NotificationService": List<Notification>
+deactivate "NotificationRepository"
+"NotificationService" --> "NotificationController": List<NotificationDTO>
+deactivate "NotificationService"
+"NotificationController" --> "User": 200 OK
+deactivate "NotificationController"
+@enduml
+
+' ==========================================
+' 7. VIEW NOTIFICATION DETAIL
+' ==========================================
+
+@startuml
+!pragma messenger true
+title View Notification Detail Sequence
+
+actor "User"
+participant "NotificationController"
+participant "NotificationService"
+participant "NotificationRepository"
+
+"User" -> "NotificationController": GET /api/v1/notifications/{id}
+activate "NotificationController"
+"NotificationController" -> "NotificationService": getNotificationDetail(id)
+activate "NotificationService"
+"NotificationService" -> "NotificationRepository": findById(id)
+activate "NotificationRepository"
+"NotificationRepository" --> "NotificationService": Notification Entity
+deactivate "NotificationRepository"
+"NotificationService" --> "NotificationController": NotificationDTO
+deactivate "NotificationService"
+"NotificationController" --> "User": 200 OK
+deactivate "NotificationController"
+@enduml
+
+' ==========================================
+' 8. CREATE NOTIFICATION CONTENT
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Create Notification Sequence
+
+actor "Admin"
+participant "NotificationController"
+participant "NotificationService"
+participant "NotificationRepository"
+participant "FCMService"
+
+"Admin" -> "NotificationController": POST /api/v1/notifications/send
+activate "NotificationController"
+"NotificationController" -> "NotificationService": sendNotification(request)
+activate "NotificationService"
+"NotificationService" -> "NotificationService": Build Notification
+"NotificationService" -> "NotificationRepository": save(notification)
+activate "NotificationRepository"
+"NotificationRepository" --> "NotificationService": saved
+deactivate "NotificationRepository"
+"NotificationService" -> "FCMService": sendPushNotification()
+"NotificationService" --> "NotificationController": success
+deactivate "NotificationService"
+"NotificationController" --> "Admin": 200 OK
+deactivate "NotificationController"
+@enduml
+
+' ==========================================
+' 9. VIEW & FILTER REQUEST LIST
+' ==========================================
+
+@startuml
+!pragma messenger true
+title View Request List Sequence
+
+actor "User"
+participant "RequestController"
+participant "RequestService"
+participant "RequestRepository"
+
+"User" -> "RequestController": GET /api/v1/requests?filter={status}
+activate "RequestController"
+"RequestController" -> "RequestService": getRequests(filter)
+activate "RequestService"
+alt filter == "All"
+    "RequestService" -> "RequestRepository": findAll()
+else filter matches specific status
+    "RequestService" -> "RequestRepository": findByStatus(status)
+end
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": List<Request>
+deactivate "RequestRepository"
+"RequestService" --> "RequestController": List<RequestDTO>
+deactivate "RequestService"
+"RequestController" --> "User": 200 OK
+deactivate "RequestController"
+@enduml
+
+' ==========================================
+' 10. VIEW REQUEST DETAILS
+' ==========================================
+
+@startuml
+!pragma messenger true
+title View Request Details Sequence
+
+actor "User"
+participant "RequestController"
+participant "RequestService"
+participant "RequestRepository"
+
+"User" -> "RequestController": GET /api/v1/requests/{id}
+activate "RequestController"
+"RequestController" -> "RequestService": getRequestDetails(id)
+activate "RequestService"
+"RequestService" -> "RequestRepository": findById(id)
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": Request Entity
+deactivate "RequestRepository"
+"RequestService" --> "RequestController": RequestDetailsDTO
+deactivate "RequestService"
+"RequestController" --> "User": 200 OK
+deactivate "RequestController"
+@enduml
+
+' ==========================================
+' 11. UPDATE REQUEST STATUS
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Update Request Status Sequence
+
+actor "Admin"
+participant "RequestController"
+participant "RequestService"
+participant "RequestRepository"
+
+"Admin" -> "RequestController": PUT /api/v1/requests/{id}/status
+activate "RequestController"
+"RequestController" -> "RequestService": updateStatus(id, newStatus)
+activate "RequestService"
+"RequestService" -> "RequestRepository": findById(id)
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": Request Entity
+deactivate "RequestRepository"
+"RequestService" -> "RequestService": request.setStatus(newStatus)
+"RequestService" -> "RequestRepository": save(request)
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": saved
+deactivate "RequestRepository"
+"RequestService" --> "RequestController": success
+deactivate "RequestService"
+"RequestController" --> "Admin": 200 OK
+deactivate "RequestController"
+@enduml
+
+' ==========================================
+' 12. SET TIMELINE TO SOLVE ISSUE
+' ==========================================
+
+@startuml
+!pragma messenger true
+title Set Timeline Sequence
+
+actor "Admin"
+participant "RequestController"
+participant "RequestService"
+participant "RequestRepository"
+
+"Admin" -> "RequestController": PUT /api/v1/requests/{id}/timeline
+activate "RequestController"
+"RequestController" -> "RequestService": setTimeline(id, timelineData)
+activate "RequestService"
+"RequestService" -> "RequestRepository": findById(id)
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": Request Entity
+deactivate "RequestRepository"
+"RequestService" -> "RequestService": request.setTimeline(timelineData)
+"RequestService" -> "RequestRepository": save(request)
+activate "RequestRepository"
+"RequestRepository" --> "RequestService": saved
+deactivate "RequestRepository"
+"RequestService" --> "RequestController": success
+deactivate "RequestService"
+"RequestController" --> "Admin": 200 OK
+deactivate "RequestController"
+@enduml
