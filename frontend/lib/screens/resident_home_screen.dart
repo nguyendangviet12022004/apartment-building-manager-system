@@ -1,15 +1,32 @@
 import 'package:flutter/material.dart';
-import '../widgets/notification_bell.dart';
-import '../widgets/app_drawer.dart';
 import '../routes/app_routes.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
 import '../screens/bills_page.dart';
 import 'service_list_screen.dart';
 import '../screens/payment_history_screen.dart';
+import '../providers/notification_provider.dart';
+import '../widgets/notification_bell.dart';
 
-class ResidentHomeScreen extends StatelessWidget {
+class ResidentHomeScreen extends StatefulWidget {
   const ResidentHomeScreen({super.key});
+
+  @override
+  State<ResidentHomeScreen> createState() => _ResidentHomeScreenState();
+}
+
+class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.accessToken != null) {
+        Provider.of<NotificationProvider>(context, listen: false)
+            .fetchNotifications(auth.accessToken!);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -440,53 +457,58 @@ class Body extends StatelessWidget {
   }
 
   // ── Notifications ────────────────────────────────────────
-  static const _notifs = [
-    ('Elevator Maintenance', 'Schedule: Dec 15-16'),
-    ('Holiday Celebrations', 'Join us Dec 24th'),
-    ('Pool Hours Extended', 'Now open until 11 PM'),
-  ];
 
   Widget _buildNotifications() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Notifications',
-                style: TextStyle(
-                  color: _darkText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Inter',
-                ),
+    return Consumer<NotificationProvider>(
+      builder: (context, notificationProvider, child) {
+        final notifs = notificationProvider.recentNotifications;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      color: _darkText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(
+                        color: _blue,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'View All',
-                style: TextStyle(
-                  color: _blue,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 128,
+                child: notifs.isEmpty
+                  ? Center(child: Text('No notifications', style: TextStyle(color: Colors.grey.shade400)))
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: notifs.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) =>
+                          _buildNotifCard(notifs[i].title, notifs[i].content),
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 128,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _notifs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, i) =>
-                  _buildNotifCard(_notifs[i].$1, _notifs[i].$2),
-            ),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -599,6 +621,20 @@ class Body extends StatelessWidget {
                             ListTile(
                               leading: const Icon(
                                 Icons.person,
+                                color: Colors.blueAccent,
+                              ),
+                              title: const Text('Update Profile'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.pushNamed(
+                                  context,
+                                  AppRoutes.profile,
+                                );
+                              },
+                            ),
+                            ListTile(
+                              leading: const Icon(
+                                Icons.lock_outline,
                                 color: Colors.blueAccent,
                               ),
                               title: const Text('Change Password'),

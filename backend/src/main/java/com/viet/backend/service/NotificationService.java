@@ -79,6 +79,14 @@ public class NotificationService {
         }
     }
 
+    @Transactional
+    public void sendToAll(String title, String content, String detail, Map<String, String> data) {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            sendNotification(user.getId(), title, content, detail, data);
+        }
+    }
+
     public List<Notification> getUserNotifications(Integer userId) {
         return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
     }

@@ -18,7 +18,9 @@ class HomeScreen extends StatelessWidget {
               child: Icon(Icons.person, color: Colors.white),
             ),
             onSelected: (value) async {
-              if (value == 'change_password') {
+              if (value == 'profile') {
+                Navigator.pushNamed(context, AppRoutes.profile);
+              } else if (value == 'change_password') {
                 Navigator.pushNamed(context, AppRoutes.changePassword);
               } else if (value == 'logout') {
                 await Provider.of<AuthProvider>(
@@ -35,6 +37,16 @@ class HomeScreen extends StatelessWidget {
               }
             },
             itemBuilder: (BuildContext context) => [
+              const PopupMenuItem<String>(
+                value: 'profile',
+                child: Row(
+                  children: [
+                    Icon(Icons.person, color: Colors.blueAccent),
+                    SizedBox(width: 8),
+                    Text('Update Profile'),
+                  ],
+                ),
+              ),
               const PopupMenuItem<String>(
                 value: 'change_password',
                 child: Row(

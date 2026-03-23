@@ -2,69 +2,103 @@
 
 import 'package:flutter/material.dart';
 import '../widgets/notification_bell.dart';
-import '../widgets/app_drawer.dart';
 import 'package:provider/provider.dart';
 import '../providers/auth_provider.dart';
-import '../screens/create_invoice_page.dart';
+import '../providers/notification_provider.dart';
 import '../routes/app_routes.dart';
+import '../models/profile_model.dart';
+import '../services/profile_service.dart';
 
-class AdminHomeScreen extends StatelessWidget {
+class AdminHomeScreen extends StatefulWidget {
   const AdminHomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFF5F5F5),
-      body: SafeArea(child: Body()),
-    );
-  }
+  State<AdminHomeScreen> createState() => _AdminHomeScreenState();
 }
 
-class Body extends StatelessWidget {
-  const Body({super.key});
+class _AdminHomeScreenState extends State<AdminHomeScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      final auth = Provider.of<AuthProvider>(context, listen: false);
+      if (auth.accessToken != null) {
+        // Fetch notifications
+        Provider.of<NotificationProvider>(context, listen: false)
+            .fetchNotifications(auth.accessToken!);
+            
+        // Fetch profile for header
+        _loadProfile();
+      }
+    });
+  }
+
+  ProfileModel? _profile;
+  final ProfileService _profileService = ProfileService();
+
+  Future<void> _loadProfile() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      if (authProvider.userId != null) {
+        final profile = await _profileService.getProfile(authProvider.userId!);
+        if (mounted) {
+          setState(() {
+            _profile = profile;
+          });
+        }
+      }
+    } catch (e) {
+      print('Error loading header profile: $e');
+    }
+  }
 
   static const _primary = Color(0xFF88304E);
   static const _dark = Color(0xFF522546);
-  static const _orange = Color(0xFFF68048);
+  static const _orange = Color(0xFFF68048); // Kept from original Body
   static const _red = Color(0xFF88304E);
   static const _grey = Color(0xFF9CA3AF);
-  static const _darkText = Color(0xFF111827);
+  static const _darkText = Color(0xFF111827); // Kept from original Body
 
   @override
   Widget build(BuildContext context) {
     const double overlapAmount = 155;
-    return Column(
-      children: [
-        Stack(
+    return Scaffold(
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: SafeArea(
+        child: Column(
           children: [
-            Column(
-              mainAxisSize: MainAxisSize.min,
+            Stack(
               children: [
-                _buildHeader(),
-                const SizedBox(height: overlapAmount),
+                Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    _buildHeader(),
+                    const SizedBox(height: overlapAmount),
+                  ],
+                ),
+                Positioned(
+                  bottom: 0,
+                  left: 0,
+                  right: 0,
+                  child: _buildQuickActions(),
+                ),
               ],
             ),
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: _buildQuickActions(),
+            Expanded(
+              child: SingleChildScrollView(
+                child: Column(
+                  children: [
+                    const SizedBox(height: 12),
+                    _buildNotifications(),
+                    const SizedBox(height: 16),
+                  ],
+                ),
+              ),
             ),
+            _buildBottomNav(),
           ],
         ),
-        Expanded(
-          child: SingleChildScrollView(
-            child: Column(
-              children: [
-                const SizedBox(height: 12),
-                _buildNotifications(),
-                const SizedBox(height: 16),
-              ],
-            ),
-          ),
-        ),
-        _buildBottomNav(),
-      ],
+      ),
     );
   }
 
@@ -90,10 +124,16 @@ class Body extends StatelessWidget {
             children: [
               CircleAvatar(
                 radius: 24,
-                backgroundImage: const NetworkImage(
-                  'https://placehold.co/48x48',
-                ),
+                backgroundImage: _profile?.avatarUrl != null
+                    ? NetworkImage(_profile!.avatarUrl!)
+                    : const NetworkImage('https://placehold.co/48x48'),
                 backgroundColor: Colors.white24,
+                child: _profile?.avatarUrl == null
+                    ? Text(
+                        _profile?.initials ?? '?',
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                      )
+                    : null,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -108,9 +148,9 @@ class Body extends StatelessWidget {
                         fontFamily: 'Inter',
                       ),
                     ),
-                    const Text(
-                      'Sarah Johnson',
-                      style: TextStyle(
+                    Text(
+                      _profile?.fullName ?? ' Sarah Johnson',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 18,
                         fontWeight: FontWeight.w600,
@@ -120,29 +160,11 @@ class Body extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.qr_code_2, color: Colors.white, size: 26),
+              const NotificationBell(iconColor: Colors.white, iconSize: 26),
               const SizedBox(width: 12),
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(
-                    Icons.notifications,
-                    color: Colors.white,
-                    size: 26,
-                  ),
-                  Positioned(
-                    top: -2,
-                    right: -2,
-                    child: Container(
-                      width: 10,
-                      height: 10,
-                      decoration: const BoxDecoration(
-                        color: _orange,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  ),
-                ],
+              IconButton(
+                icon: const Icon(Icons.settings, color: Colors.white, size: 26),
+                onPressed: () => _showProfileOptions(context),
               ),
             ],
           ),
@@ -259,7 +281,7 @@ class Body extends StatelessWidget {
   static const _row1 = [
     (Icons.receipt_long, 'Invoice', AppRoutes.invoiceList), // ← updated
     (Icons.spa_outlined, 'Amenity', AppRoutes.bookingRequests), // ← updated
-    (Icons.newspaper, 'News', null),
+    (Icons.campaign_outlined, 'News', AppRoutes.createNotification),
     (Icons.bar_chart, 'Report', null),
     (Icons.people_outline, 'Resident', AppRoutes.residentManagement),
   ];
@@ -364,53 +386,58 @@ class Body extends StatelessWidget {
   }
 
   // ── Notifications ────────────────────────────────────────
-  static const _notifs = [
-    ('Elevator Maintenance', 'Schedule: Dec 15-16'),
-    ('Holiday Celebrations', 'Join us Dec 24th'),
-    ('Pool Hours Extended', 'Now open until 11 PM'),
-  ];
 
   Widget _buildNotifications() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: const [
-              Text(
-                'Notifications',
-                style: TextStyle(
-                  color: _darkText,
-                  fontSize: 18,
-                  fontWeight: FontWeight.w700,
-                  fontFamily: 'Inter',
-                ),
+    return Consumer<NotificationProvider>(
+      builder: (context, notificationProvider, child) {
+        final notifs = notificationProvider.recentNotifications;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Notifications',
+                    style: TextStyle(
+                      color: _darkText,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+                    child: const Text(
+                      'View All',
+                      style: TextStyle(
+                        color: _red,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w500,
+                        fontFamily: 'Inter',
+                      ),
+                    ),
+                  ),
+                ],
               ),
-              Text(
-                'View All',
-                style: TextStyle(
-                  color: _red,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                  fontFamily: 'Inter',
-                ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 128,
+                child: notifs.isEmpty
+                  ? Center(child: Text('No notifications', style: TextStyle(color: Colors.grey.shade400)))
+                  : ListView.separated(
+                      scrollDirection: Axis.horizontal,
+                      itemCount: notifs.length,
+                      separatorBuilder: (_, __) => const SizedBox(width: 12),
+                      itemBuilder: (_, i) =>
+                          _buildNotifCard(notifs[i].title, notifs[i].content),
+                    ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 128,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: _notifs.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, i) =>
-                  _buildNotifCard(_notifs[i].$1, _notifs[i].$2),
-            ),
-          ),
-        ],
-      ),
+        );
+      }
     );
   }
 
@@ -511,6 +538,46 @@ class Body extends StatelessWidget {
     );
   }
 
+  void _showProfileOptions(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (ctx) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.person, color: Colors.blueAccent),
+              title: const Text('Update Profile'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, AppRoutes.profile);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.lock_outline, color: Colors.blueAccent),
+              title: const Text('Change Password'),
+              onTap: () {
+                Navigator.pop(ctx);
+                Navigator.pushNamed(context, AppRoutes.changePassword);
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout, color: Colors.redAccent),
+              title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+              onTap: () async {
+                Navigator.pop(ctx);
+                await context.read<AuthProvider>().logout();
+                if (context.mounted) {
+                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildNavItem(
     BuildContext context,
     IconData icon,
@@ -520,9 +587,13 @@ class Body extends StatelessWidget {
   ) {
     final color = isActive ? _red : _grey;
     return InkWell(
-      onTap: route != null
-          ? () => Navigator.of(context, rootNavigator: true).pushNamed(route)
-          : null,
+      onTap: () {
+        if (label == 'Profile') {
+          _showProfileOptions(context);
+        } else if (route != null) {
+          Navigator.of(context, rootNavigator: true).pushNamed(route);
+        }
+      },
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [

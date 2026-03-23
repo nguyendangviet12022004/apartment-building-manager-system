@@ -19,6 +19,7 @@ import '../screens/booking_requests_screen.dart';
 import '../screens/booking_calendar_screen.dart';
 import '../screens/add_apartment_screen.dart';
 import '../screens/manager_generate_access_code_screen.dart';
+import '../screens/manager_create_notification_screen.dart';
 import '../screens/apartment_list_screen.dart';
 import '../screens/apartment_detail_screen.dart';
 import '../screens/edit_apartment_screen.dart';
@@ -57,6 +58,7 @@ class AppRoutes {
   static const String requestList = '/request-list';
   static const String createRequest = '/create-request';
   static const String generateAccessCode = '/manager/generate-code';
+  static const String createNotification = '/manager/create-notification';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -102,5 +104,6 @@ class AppRoutes {
       return RequestDetailResponseScreen(request: request);
     },
     generateAccessCode: (context) => const ManagerGenerateAccessCodeScreen(),
+    createNotification: (context) => const ManagerCreateNotificationScreen(),
   };
 }

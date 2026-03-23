@@ -21,7 +21,6 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
   DateTime _selectedDay = DateTime.now();
   CalendarView _currentView = CalendarView.month;
   
-  List<CalendarBookingModel> _allBookings = [];
   Map<DateTime, List<CalendarBookingModel>> _bookingsByDate = {};
   bool _isLoading = true;
   String? _error;
@@ -50,7 +49,6 @@ class _BookingCalendarScreenState extends State<BookingCalendarScreen> {
       );
 
       setState(() {
-        _allBookings = response.bookings;
         _bookingsByDate = _groupBookingsByDate(response.bookings);
         _isLoading = false;
       });
