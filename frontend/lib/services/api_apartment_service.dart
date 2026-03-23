@@ -54,6 +54,8 @@ class ApiApartmentService {
     required String token,
     String? keyword,
     String? status,
+    bool? used,
+    int? blockId,
     int page = 0,
     int size = 10,
   }) async {
@@ -62,6 +64,8 @@ class ApiApartmentService {
     if (status != null && status != 'All Units') {
       url += '&status=${status.toUpperCase()}';
     }
+    if (used != null) url += '&used=$used';
+    if (blockId != null) url += '&blockId=$blockId';
 
     final response = await http.get(
       Uri.parse(url),
@@ -181,5 +185,23 @@ class ApiApartmentService {
       return jsonDecode(response.body);
     }
     return {};
+  }
+
+  Future<List<dynamic>> getUnusedApartments({
+    required String token,
+  }) async {
+    final response = await http.get(
+      Uri.parse('$baseUrl?used=false'),
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': 'Bearer $token',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      return jsonDecode(response.body);
+    } else {
+      throw Exception('Failed to load unused apartments');
+    }
   }
 }

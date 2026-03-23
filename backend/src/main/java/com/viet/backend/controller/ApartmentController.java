@@ -1,6 +1,5 @@
 package com.viet.backend.controller;
 
-import com.viet.backend.dto.ApartmentDTO;
 import com.viet.backend.dto.ApartmentRequest;
 import com.viet.backend.dto.ApartmentResponse;
 import com.viet.backend.service.ApartmentService;
@@ -58,7 +57,7 @@ public class ApartmentController {
         org.springframework.data.domain.Pageable pageable = 
             org.springframework.data.domain.PageRequest.of(page != null ? page : 0, size != null ? size : 10);
 
-        return ResponseEntity.ok(apartmentService.getApartments(keyword, blockId, floor, status, pageable));
+        return ResponseEntity.ok(apartmentService.getApartments(keyword, blockId, floor, status, used, pageable));
     }
 
     // GET /api/v1/apartments/{id}

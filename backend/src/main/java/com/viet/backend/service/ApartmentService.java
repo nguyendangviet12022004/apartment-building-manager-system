@@ -187,7 +187,7 @@ public class ApartmentService {
                 .collect(Collectors.toList());
     }
 
-    public Page<ApartmentDTO> getApartments(String keyword, Long blockId, Integer floor, String status,
+    public Page<ApartmentDTO> getApartments(String keyword, Long blockId, Integer floor, String status, Boolean used,
             Pageable pageable) {
         Specification<Apartment> spec = Specification.where(null);
 
@@ -206,6 +206,10 @@ public class ApartmentService {
 
         if (status != null && !status.trim().isEmpty() && !status.equalsIgnoreCase("ALL")) {
             spec = spec.and((root, query, cb) -> cb.equal(cb.upper(root.get("status")), status.toUpperCase()));
+        }
+
+        if (used != null) {
+            spec = spec.and((root, query, cb) -> cb.equal(root.get("used"), used));
         }
 
         // To avoid N+1 issues when mapping to DTO, we can use EntityGraph or let batch

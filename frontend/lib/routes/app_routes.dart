@@ -10,21 +10,20 @@ import '../screens/reset_password_screen.dart';
 import '../screens/change_password_screen.dart';
 import '../screens/apartment_verify_screen.dart';
 import '../screens/admin_request_screen.dart';
-import '../screens/bills_page.dart';
 import '../screens/create_invoice_page.dart';
 import '../screens/invoice_list_management_screen.dart';
-import '../screens/payment_history_screen.dart';
 import '../screens/request_detail_response_screen.dart';
 import '../screens/profile_screen.dart';
 import '../screens/resident_management_screen.dart';
 import '../screens/booking_requests_screen.dart';
 import '../screens/booking_calendar_screen.dart';
-import '../screens/booking_detail_screen.dart';
-import '../models/request_model.dart';
 import '../screens/add_apartment_screen.dart';
+import '../screens/manager_generate_access_code_screen.dart';
 import '../screens/apartment_list_screen.dart';
 import '../screens/apartment_detail_screen.dart';
 import '../screens/edit_apartment_screen.dart';
+import '../screens/booking_detail_screen.dart';
+import '../models/request_model.dart';
 import '../screens/request_list_screen.dart';
 import '../screens/create_request_screen.dart';
 
@@ -57,6 +56,7 @@ class AppRoutes {
   static const String editApartment = '/edit-apartment';
   static const String requestList = '/request-list';
   static const String createRequest = '/create-request';
+  static const String generateAccessCode = '/manager/generate-code';
 
   static Map<String, WidgetBuilder> get routes => {
     home: (context) => const HomeScreen(),
@@ -101,5 +101,6 @@ class AppRoutes {
           ModalRoute.of(context)!.settings.arguments as RequestModel;
       return RequestDetailResponseScreen(request: request);
     },
+    generateAccessCode: (context) => const ManagerGenerateAccessCodeScreen(),
   };
 }

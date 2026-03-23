@@ -267,6 +267,7 @@ class Body extends StatelessWidget {
   static const _row2 = [
     (Icons.domain_add, 'Add Apartment', AppRoutes.addApartment),
     (Icons.apartment, 'Apartments', AppRoutes.apartmentList),
+    (Icons.person_add_alt_outlined, 'Invite Resident', AppRoutes.generateAccessCode),
     (Icons.directions_car_outlined, 'Vehicle', null),
   ];
 
