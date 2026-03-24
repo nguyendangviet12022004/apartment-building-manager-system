@@ -31,6 +31,7 @@ class RequestModel {
   final int userId;
   final String userEmail;
   final String userFullName;
+  final String? userApartmentCode;
   final List<RequestMediaModel> media;
 
   RequestModel({
@@ -48,6 +49,7 @@ class RequestModel {
     required this.userId,
     required this.userEmail,
     required this.userFullName,
+    this.userApartmentCode,
     required this.media,
   });
 
@@ -71,6 +73,7 @@ class RequestModel {
       userId: json['userId'],
       userEmail: json['userEmail'],
       userFullName: json['userFullName'],
+      userApartmentCode: json['userApartmentCode'],
       media:
           (json['media'] as List<dynamic>?)
               ?.map((m) => RequestMediaModel.fromJson(m))

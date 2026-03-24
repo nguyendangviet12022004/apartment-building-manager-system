@@ -80,6 +80,8 @@ class _RequestDetailResponseScreenState
               _buildInfoRow('ID', '#${widget.request.id}'),
               _buildInfoRow('Title', widget.request.title),
               _buildInfoRow('Resident', widget.request.userFullName),
+              if (widget.request.userApartmentCode != null && widget.request.userApartmentCode != 'Unknown')
+                _buildInfoRow('Apartment', widget.request.userApartmentCode!),
               _buildInfoRow(
                 'Date',
                 widget.request.createdAt.toString().substring(0, 16),
