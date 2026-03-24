@@ -62,7 +62,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     _relationshipController = TextEditingController(text: 'Spouse');
 
     _selectedGender = widget.profile.gender;
-    _selectedRelationship = widget.profile.emergencyContactRelationship ?? 'Spouse';
+    if (_selectedGender == null || _selectedGender!.trim().isEmpty || !['Male', 'Female', 'Other'].contains(_selectedGender)) {
+      _selectedGender = null; // Default to null (shows hint) or can pick 'Other'
+    }
+
+    _selectedRelationship = widget.profile.emergencyContactRelationship;
+    if (_selectedRelationship == null || _selectedRelationship!.trim().isEmpty || !['Spouse', 'Parent', 'Sibling', 'Friend', 'Other'].contains(_selectedRelationship)) {
+      _selectedRelationship = 'Other'; // Better to default to a valid item
+    }
+
     _emailNotifications = widget.profile.emailNotifications ?? true;
     _pushNotifications = widget.profile.pushNotifications ?? true;
   }
@@ -487,6 +495,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedGender,
             items: ['Male', 'Female', 'Other'],
             onChanged: (value) => setState(() => _selectedGender = value),
+            hintText: 'Select Gender',
           ),
           const SizedBox(height: 16),
           _buildTextField(
@@ -551,6 +560,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             value: _selectedRelationship,
             items: ['Spouse', 'Parent', 'Sibling', 'Friend', 'Other'],
             onChanged: (value) => setState(() => _selectedRelationship = value),
+            hintText: 'Select Relationship',
           ),
         ],
       ),
@@ -671,6 +681,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     required String? value,
     required List<String> items,
     required void Function(String?) onChanged,
+    String? hintText,
   }) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -685,6 +696,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         const SizedBox(height: 8),
         DropdownButtonFormField<String>(
           value: value,
+          hint: hintText != null ? Text(hintText) : null,
           decoration: InputDecoration(
             filled: true,
             fillColor: Colors.white,
