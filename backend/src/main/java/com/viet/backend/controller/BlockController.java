@@ -6,7 +6,6 @@ import com.viet.backend.service.BlockService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -27,5 +26,16 @@ public class BlockController {
 //    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
     public ResponseEntity<List<Block>> getAllBlocks() {
         return ResponseEntity.ok(blockService.getAllBlocks());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<Block> updateBlock(@PathVariable Long id, @Valid @RequestBody BlockRequest request) {
+        return ResponseEntity.ok(blockService.updateBlock(id, request));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteBlock(@PathVariable Long id) {
+        blockService.deleteBlock(id);
+        return ResponseEntity.noContent().build();
     }
 }

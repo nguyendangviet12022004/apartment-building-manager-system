@@ -24,9 +24,11 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.accessToken != null) {
         // Fetch notifications
-        Provider.of<NotificationProvider>(context, listen: false)
-            .fetchNotifications(auth.accessToken!);
-            
+        Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        ).fetchNotifications(auth.accessToken!);
+
         // Fetch profile for header
         _loadProfile();
       }
@@ -131,7 +133,10 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                 child: _profile?.avatarUrl == null
                     ? Text(
                         _profile?.initials ?? '?',
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                        ),
                       )
                     : null,
               ),
@@ -288,8 +293,12 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
 
   static const _row2 = [
     (Icons.domain_add, 'Add Apartment', AppRoutes.addApartment),
-    (Icons.apartment, 'Apartments', AppRoutes.apartmentList),
-    (Icons.person_add_alt_outlined, 'Invite Resident', AppRoutes.generateAccessCode),
+    (Icons.apartment, 'Apartment', AppRoutes.apartmentList),
+    (
+      Icons.person_add_alt_outlined,
+      'Invite Resident',
+      AppRoutes.generateAccessCode,
+    ),
     (Icons.directions_car_outlined, 'Vehicle', null),
   ];
 
@@ -408,7 +417,8 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.notifications),
                     child: const Text(
                       'View All',
                       style: TextStyle(
@@ -425,19 +435,24 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               SizedBox(
                 height: 128,
                 child: notifs.isEmpty
-                  ? Center(child: Text('No notifications', style: TextStyle(color: Colors.grey.shade400)))
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: notifs.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) =>
-                          _buildNotifCard(notifs[i].title, notifs[i].content),
-                    ),
+                    ? Center(
+                        child: Text(
+                          'No notifications',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
+                      )
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: notifs.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, i) =>
+                            _buildNotifCard(notifs[i].title, notifs[i].content),
+                      ),
               ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -527,9 +542,27 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceAround,
               children: [
                 _buildNavItem(ctx, Icons.home, 'Home', true, null),
-                _buildNavItem(ctx, Icons.grid_view, 'Calendar', false, AppRoutes.bookingCalendar),
-                _buildNavItem(ctx, Icons.receipt_long, 'Invoices', false, AppRoutes.invoiceList),
-                _buildNavItem(ctx, Icons.person_outline, 'Profile', false, AppRoutes.profile),
+                _buildNavItem(
+                  ctx,
+                  Icons.grid_view,
+                  'Calendar',
+                  false,
+                  AppRoutes.bookingCalendar,
+                ),
+                _buildNavItem(
+                  ctx,
+                  Icons.receipt_long,
+                  'Invoices',
+                  false,
+                  AppRoutes.invoiceList,
+                ),
+                _buildNavItem(
+                  ctx,
+                  Icons.person_outline,
+                  'Profile',
+                  false,
+                  AppRoutes.profile,
+                ),
               ],
             ),
           ),
@@ -563,12 +596,19 @@ class _AdminHomeScreenState extends State<AdminHomeScreen> {
             ),
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.redAccent),
-              title: const Text('Logout', style: TextStyle(color: Colors.redAccent)),
+              title: const Text(
+                'Logout',
+                style: TextStyle(color: Colors.redAccent),
+              ),
               onTap: () async {
                 Navigator.pop(ctx);
                 await context.read<AuthProvider>().logout();
                 if (context.mounted) {
-                  Navigator.pushNamedAndRemoveUntil(context, AppRoutes.login, (route) => false);
+                  Navigator.pushNamedAndRemoveUntil(
+                    context,
+                    AppRoutes.login,
+                    (route) => false,
+                  );
                 }
               },
             ),

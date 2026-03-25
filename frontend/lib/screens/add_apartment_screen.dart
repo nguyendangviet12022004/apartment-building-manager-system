@@ -126,6 +126,322 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
     }
   }
 
+  void _showManageBlocksBottomSheet() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Container(
+              height: MediaQuery.of(context).size.height * 0.7,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 12),
+                  // Drag handle
+                  Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            Icon(Icons.domain, color: primaryMaroon),
+                            const SizedBox(width: 12),
+                            Text(
+                              'Building Blocks',
+                              style: TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: primaryMaroon,
+                              ),
+                            ),
+                          ],
+                        ),
+                        InkWell(
+                          onTap: () {
+                            _showAddOrEditBlockDialog(null, setModalState);
+                          },
+                          child: CircleAvatar(
+                            radius: 18,
+                            backgroundColor: backgroundPink,
+                            child: Icon(Icons.add, color: primaryMaroon),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Expanded(
+                    child: _isLoadingBlocks
+                        ? Center(child: CircularProgressIndicator(color: primaryMaroon))
+                        : ListView.separated(
+                            padding: const EdgeInsets.symmetric(horizontal: 24),
+                            itemCount: _blocks.length,
+                            separatorBuilder: (context, index) => const Divider(height: 16),
+                            itemBuilder: (context, index) {
+                              final block = _blocks[index];
+                              return ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: backgroundPink,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Icon(Icons.business, color: primaryMaroon),
+                                ),
+                                title: Text(
+                                  block['blockCode'] ?? 'Unknown',
+                                  style: const TextStyle(fontWeight: FontWeight.bold),
+                                ),
+                                subtitle: Text(
+                                  (block['description']?.toString().isEmpty ?? true)
+                                      ? 'NO DESCRIPTION'
+                                      : block['description'].toString().toUpperCase(),
+                                  style: const TextStyle(fontSize: 10, color: Colors.black54),
+                                ),
+                                trailing: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    IconButton(
+                                      icon: Icon(Icons.edit, color: primaryMaroon, size: 20),
+                                      onPressed: () {
+                                        _showAddOrEditBlockDialog(block, setModalState);
+                                      },
+                                    ),
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red, size: 20),
+                                      onPressed: () {
+                                        _confirmDeleteBlock(block, setModalState);
+                                      },
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: ElevatedButton(
+                      onPressed: () {
+                        _showAddOrEditBlockDialog(null, setModalState);
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: primaryMaroon,
+                        minimumSize: const Size(double.infinity, 50),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(30),
+                        ),
+                      ),
+                      child: const Text(
+                        '+ Add Block',
+                        style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    ).whenComplete(() {
+      _fetchBlocks();
+    });
+  }
+
+  void _showPopupNotification(String message, {bool isError = false}) {
+    if (!mounted) return;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(isError ? Icons.error_outline : Icons.check_circle_outline, color: isError ? Colors.red : Colors.green),
+            const SizedBox(width: 8),
+            Text(isError ? 'Error' : 'Success', style: TextStyle(color: isError ? Colors.red : Colors.green, fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
+        content: Text(message),
+        actions: [
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: isError ? Colors.red : Colors.green,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            ),
+            child: const Text('OK', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showAddOrEditBlockDialog(Map<String, dynamic>? block, StateSetter setModalState) {
+    final isEdit = block != null;
+    final codeController = TextEditingController(text: block?['blockCode']);
+    final descController = TextEditingController(text: block?['description']);
+    final formKey = GlobalKey<FormState>();
+    bool isSaving = false;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) {
+        return StatefulBuilder(
+          builder: (builderContext, setDialogState) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+              title: Text(isEdit ? 'Edit Block' : 'Add Block', style: TextStyle(color: primaryMaroon)),
+              content: Form(
+                key: formKey,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextFormField(
+                      controller: codeController,
+                      decoration: _inputDecoration('Block Code (e.g. BLA)'),
+                      validator: (v) {
+                        if (v == null || v.isEmpty) return 'Code is required';
+                        if (v.length != 3) return 'Code must be exactly 3 chars';
+                        return null;
+                      },
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: descController,
+                      decoration: _inputDecoration('Name/Description (Optional)'),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isSaving ? null : () => Navigator.pop(dialogContext),
+                  child: const Text('Cancel'),
+                ),
+                ElevatedButton(
+                  onPressed: isSaving
+                      ? null
+                      : () async {
+                          if (formKey.currentState!.validate()) {
+                            setDialogState(() => isSaving = true);
+                            try {
+                              final token = Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
+                              if (isEdit) {
+                                await _blockService.updateBlock(
+                                  token: token,
+                                  id: block['id'],
+                                  blockCode: codeController.text,
+                                  description: descController.text,
+                                );
+                              } else {
+                                final newBlock = await _blockService.createBlock(
+                                  token: token,
+                                  blockCode: codeController.text,
+                                  description: descController.text,
+                                );
+                                setState(() {
+                                  blockId = newBlock['id'].toString();
+                                });
+                              }
+                              
+                              // Fetch fresh data
+                              final data = await _blockService.getBlocks(token: token);
+                              setModalState(() {
+                                _blocks = data;
+                              });
+                              setState(() {
+                                _blocks = data;
+                                // ensure blockId is still valid
+                                if (blockId != null && !_blocks.any((b) => b['id'].toString() == blockId)) {
+                                  blockId = null;
+                                }
+                              });
+                              
+                              if (mounted) {
+                                Navigator.pop(dialogContext); // close form on success
+                                _showPopupNotification(isEdit ? 'Block updated successfully' : 'Block created successfully');
+                              }
+                            } catch (e) {
+                              if (mounted) {
+                                _showPopupNotification(e.toString().replaceAll('Exception: ', ''), isError: true);
+                                setDialogState(() => isSaving = false); // stop loading indicator
+                              }
+                            }
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(backgroundColor: primaryMaroon),
+                  child: isSaving
+                      ? const SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
+                      : Text(isEdit ? 'Save' : 'Create', style: const TextStyle(color: Colors.white)),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+  void _confirmDeleteBlock(Map<String, dynamic> block, StateSetter setModalState) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('Delete Block'),
+          content: Text('Are you sure you want to delete block "${block['blockCode']}"?'),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                final token = Provider.of<AuthProvider>(context, listen: false).accessToken ?? '';
+                Navigator.pop(dialogContext);
+                try {
+                  await _blockService.deleteBlock(token: token, id: block['id']);
+                  if (!mounted) return;
+                  _showPopupNotification('Block deleted successfully');
+                  final data = await _blockService.getBlocks(token: token);
+                  setModalState(() {
+                    _blocks = data;
+                  });
+                  setState(() {
+                    _blocks = data;
+                    if (blockId == block['id'].toString()) blockId = null;
+                  });
+                } catch (e) {
+                  if (!mounted) return;
+                  _showPopupNotification(e.toString().replaceAll('Exception: ', ''), isError: true);
+                }
+              },
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+              child: const Text('Delete', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -198,7 +514,30 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
                     const SizedBox(height: 24),
 
                     // Block Selection
-                    _buildLabel('Block'),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        _buildLabel('Block'),
+                        if (!_isLoadingBlocks)
+                          InkWell(
+                            onTap: _showManageBlocksBottomSheet,
+                            child: Row(
+                              children: [
+                                Icon(Icons.edit_note, size: 16, color: primaryMaroon),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Manage Blocks',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: primaryMaroon,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                      ],
+                    ),
                     _isLoadingBlocks
                         ? const Center(
                             child: Padding(
@@ -206,28 +545,50 @@ class _AddApartmentScreenState extends State<AddApartmentScreen> {
                               child: CircularProgressIndicator(),
                             ),
                           )
-                        : DropdownButtonFormField<String>(
-                            decoration: _inputDecoration('Select Block'),
-                            icon: Icon(
-                              Icons.keyboard_arrow_down,
-                              color: primaryMaroon,
-                            ),
-                            items: _blocks.map((b) {
-                              return DropdownMenuItem<String>(
-                                value: b['id'].toString(),
-                                child: Text(
-                                  b['blockCode'] != null
-                                      ? '${b['blockCode']} - ${b['description'] ?? 'Block'}'
-                                      : 'Unnamed Block',
+                        : Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Expanded(
+                                child: DropdownButtonFormField<String>(
+                                  value: blockId,
+                                  decoration: _inputDecoration('Select Block'),
+                                  icon: Icon(
+                                    Icons.keyboard_arrow_down,
+                                    color: primaryMaroon,
+                                  ),
+                                  items: _blocks.map((b) {
+                                    return DropdownMenuItem<String>(
+                                      value: b['id'].toString(),
+                                      child: Text(
+                                        b['blockCode'] != null
+                                            ? '${b['blockCode']} - ${b['description'] ?? 'Block'}'
+                                            : 'Unnamed Block',
+                                      ),
+                                    );
+                                  }).toList(),
+                                  onChanged: (val) => setState(() => blockId = val),
+                                  validator: (val) {
+                                    if (val == null || val.isEmpty)
+                                      return 'Block is required';
+                                    return null;
+                                  },
                                 ),
-                              );
-                            }).toList(),
-                            onChanged: (val) => setState(() => blockId = val),
-                            validator: (val) {
-                              if (val == null || val.isEmpty)
-                                return 'Block is required';
-                              return null;
-                            },
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                height: 56, // matching the default height of input
+                                width: 56,
+                                decoration: BoxDecoration(
+                                  color: backgroundPink,
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.black12),
+                                ),
+                                child: IconButton(
+                                  icon: Icon(Icons.add, color: primaryMaroon),
+                                  onPressed: _showManageBlocksBottomSheet,
+                                ),
+                              ),
+                            ],
                           ),
                     const SizedBox(height: 16),
 

@@ -169,7 +169,10 @@ class _AdminRequestScreenState extends State<AdminRequestScreen> {
         subtitle: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text('From: ${request.userFullName}'),
+            Text(
+              'From: ${request.userFullName}${request.userApartmentCode != null && request.userApartmentCode != 'Unknown' ? ' (Apt: ${request.userApartmentCode})' : ''}',
+              style: const TextStyle(fontWeight: FontWeight.w500),
+            ),
             const SizedBox(height: 4),
             Row(
               children: [

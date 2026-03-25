@@ -4,8 +4,10 @@ import com.viet.backend.dto.RequestResponse;
 import com.viet.backend.model.AdminResponse;
 import com.viet.backend.model.Request;
 import com.viet.backend.model.RequestMedia;
+import com.viet.backend.model.Apartment;
 import com.viet.backend.model.Role;
 import com.viet.backend.model.User;
+import com.viet.backend.repository.ApartmentRepository;
 import com.viet.backend.repository.RequestRepository;
 import com.viet.backend.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,8 +30,16 @@ public class RequestService {
     private final UserRepository userRepository;
     private final CloudinaryService cloudinaryService;
     private final NotificationService notificationService;
+    private final ApartmentRepository apartmentRepository;
 
     private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB limit
+
+    private String getApartmentCode(User user) {
+        if (user == null || user.getId() == null) return "Unknown";
+        return apartmentRepository.findByResidentUserId(user.getId())
+                .map(Apartment::getApartmentCode)
+                .orElse("Unknown");
+    }
 
     public Page<RequestResponse> getAllRequests(Request.RequestStatus status, Pageable pageable) {
         Specification<Request> spec = (root, query, criteriaBuilder) -> {
@@ -40,12 +50,12 @@ public class RequestService {
         };
 
         return requestRepository.findAll(spec, pageable)
-                .map(RequestResponse::fromEntity);
+                .map(request -> RequestResponse.fromEntity(request, getApartmentCode(request.getUser())));
     }
 
     public Page<RequestResponse> getUserRequests(Integer userId, Pageable pageable) {
         return requestRepository.findAllByUserId(userId, pageable)
-                .map(RequestResponse::fromEntity);
+                .map(request -> RequestResponse.fromEntity(request, getApartmentCode(request.getUser())));
     }
 
     public Page<RequestResponse> getMyRequests(String statusStr, String issueType, String sortStr, int page, int size) {
@@ -83,7 +93,7 @@ public class RequestService {
 
         Pageable pageable = org.springframework.data.domain.PageRequest.of(page, size, sort);
         return requestRepository.findByUserIdWithFilters(user.getId(), status, issueType, pageable)
-                .map(RequestResponse::fromEntity);
+                .map(request -> RequestResponse.fromEntity(request, getApartmentCode(request.getUser())));
     }
 
     @Transactional
@@ -148,7 +158,7 @@ public class RequestService {
         notificationService.sendToRole(Role.ADMIN, "New Request", notifContent, description, data);
         notificationService.sendToRole(Role.MANAGER, "New Request", notifContent, description, data);
 
-        return RequestResponse.fromEntity(savedRequest);
+        return RequestResponse.fromEntity(savedRequest, getApartmentCode(user));
     }
 
     @Transactional
@@ -183,7 +193,7 @@ public class RequestService {
             }
         }
 
-        return RequestResponse.fromEntity(requestRepository.save(request));
+        return RequestResponse.fromEntity(requestRepository.save(request), getApartmentCode(user));
     }
 
     private RequestMedia.MediaType determineMediaType(MultipartFile file) {
@@ -230,7 +240,7 @@ public class RequestService {
         );
         notificationService.sendNotification(request.getUser().getId(), titleNotif, contentNotif, responseContent, data);
 
-        return RequestResponse.fromEntity(savedRequest);
+        return RequestResponse.fromEntity(savedRequest, getApartmentCode(request.getUser()));
     }
 
     @Transactional
@@ -258,6 +268,6 @@ public class RequestService {
         );
         notificationService.sendNotification(request.getUser().getId(), "Completion Time Set", contentNotif, contentNotif, data);
 
-        return RequestResponse.fromEntity(savedRequest);
+        return RequestResponse.fromEntity(savedRequest, getApartmentCode(request.getUser()));
     }
 }
