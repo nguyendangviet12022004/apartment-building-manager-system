@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'package:intl/intl.dart';
 import '../models/booking_model.dart';
 import '../services/booking_service.dart';
@@ -17,9 +18,13 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
 
   List<BookingModel> _bookings = [];
   bool _isLoading = true;
+  bool _isLoadMoreLoading = false;
   String? _error;
 
   String _selectedStatus = 'ALL';
+  int _currentPage = 0;
+  bool _hasMore = true;
+  Timer? _debounceTimer;
 
   @override
   void initState() {
@@ -30,38 +35,55 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
   @override
   void dispose() {
     _searchController.dispose();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 
-  Future<void> _loadBookings() async {
-    setState(() {
-      _isLoading = true;
-      _error = null;
-    });
+  Future<void> _loadBookings({bool isLoadMore = false}) async {
+    if (isLoadMore) {
+      if (!_hasMore || _isLoadMoreLoading) return;
+      setState(() => _isLoadMoreLoading = true);
+    } else {
+      setState(() {
+        _isLoading = true;
+        _error = null;
+        _currentPage = 0;
+        _hasMore = true;
+      });
+    }
 
     try {
       final response = await _bookingService.getBookings(
         search: _searchController.text.trim(),
         status: _selectedStatus == 'ALL' ? null : _selectedStatus,
+        page: _currentPage,
+        pageSize: 10, // Fetch 10 items per page for better UX
       );
 
       setState(() {
-        _bookings = response.bookings;
-        _isLoading = false;
+        if (isLoadMore) {
+          _bookings.addAll(response.bookings);
+          _isLoadMoreLoading = false;
+        } else {
+          _bookings = response.bookings;
+          _isLoading = false;
+        }
+        _currentPage++;
+        _hasMore = response.page < response.totalPages - 1;
       });
     } catch (e) {
       setState(() {
         _error = e.toString().replaceAll('Exception: ', '');
         _isLoading = false;
+        _isLoadMoreLoading = false;
       });
     }
   }
 
   void _onSearch(String value) {
-    Future.delayed(const Duration(milliseconds: 500), () {
-      if (_searchController.text == value) {
-        _loadBookings();
-      }
+    if (_debounceTimer?.isActive ?? false) _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 500), () {
+      _loadBookings();
     });
   }
 
@@ -197,7 +219,7 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
       onRefresh: _loadBookings,
       child: ListView.builder(
         padding: const EdgeInsets.all(16),
-        itemCount: _bookings.length + 1,
+        itemCount: _bookings.length + (_hasMore ? 1 : 0),
         itemBuilder: (context, index) {
           if (index == _bookings.length) {
             return _buildLoadMoreButton();
@@ -400,19 +422,26 @@ class _BookingRequestsScreenState extends State<BookingRequestsScreen> {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 16),
       child: Center(
-        child: TextButton(
-          onPressed: () {
-            // Load more bookings
-          },
-          child: const Text(
-            'LOAD MORE REQUESTS',
-            style: TextStyle(
-              color: Color(0xFF6B7280),
-              fontSize: 14,
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-        ),
+        child: _isLoadMoreLoading
+            ? const SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: Color(0xFF88304E),
+                ),
+              )
+            : TextButton(
+                onPressed: () => _loadBookings(isLoadMore: true),
+                child: const Text(
+                  'LOAD MORE REQUESTS',
+                  style: TextStyle(
+                    color: Color(0xFF88304E),
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
       ),
     );
   }

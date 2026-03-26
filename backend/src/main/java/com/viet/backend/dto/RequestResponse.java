@@ -35,6 +35,7 @@ public class RequestResponse {
     private Integer userId;
     private String userEmail;
     private String userFullName;
+    private String userApartmentCode;
     private List<MediaDto> media;
 
     @Data
@@ -46,7 +47,7 @@ public class RequestResponse {
         private RequestMedia.MediaType type;
     }
 
-    public static RequestResponse fromEntity(Request request) {
+    public static RequestResponse fromEntity(Request request, String apartmentCode) {
         RequestResponseBuilder builder = RequestResponse.builder()
                 .id(request.getId())
                 .title(request.getTitle())
@@ -61,6 +62,7 @@ public class RequestResponse {
                 .userId(request.getUser().getId())
                 .userEmail(request.getUser().getEmail())
                 .userFullName(request.getUser().getFirstname() + " " + request.getUser().getLastname())
+                .userApartmentCode(apartmentCode)
                 .media(request.getMedia().stream()
                         .map(m -> MediaDto.builder()
                                 .url(m.getUrl())

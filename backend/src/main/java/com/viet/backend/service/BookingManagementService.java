@@ -51,9 +51,10 @@ public class BookingManagementService {
         
         log.info("Successfully mapped {} bookings to DTOs", allBookingItems.size());
         
-        // Apply filters
+        // Apply filters AND sort by newest first (ID descending)
         List<BookingDTO.BookingListItem> filteredBookings = allBookingItems.stream()
                 .filter(item -> applyFilters(item, request))
+                .sorted((a, b) -> b.getBookingId().compareTo(a.getBookingId()))
                 .collect(Collectors.toList());
 
         log.info("After filtering: {} bookings match criteria", filteredBookings.size());
