@@ -22,8 +22,10 @@ class _ResidentHomeScreenState extends State<ResidentHomeScreen> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final auth = Provider.of<AuthProvider>(context, listen: false);
       if (auth.accessToken != null) {
-        Provider.of<NotificationProvider>(context, listen: false)
-            .fetchNotifications(auth.accessToken!);
+        Provider.of<NotificationProvider>(
+          context,
+          listen: false,
+        ).fetchNotifications(auth.accessToken!);
       }
     });
   }
@@ -263,10 +265,10 @@ class Body extends StatelessWidget {
   Widget _buildQuickActions() {
     final actions = [
       (Icons.credit_card, 'My Bills', AppRoutes.bills),
-      (Icons.calendar_today, 'Booking', null),
-      (Icons.newspaper, 'News', null),
-      (Icons.chat_bubble_outline, 'Feedback', null),
-      (Icons.inventory_2_outlined, 'Parcels', AppRoutes.paymentHistory),
+      // (Icons.calendar_today, 'Booking', null),
+      // (Icons.newspaper, 'News', null),
+      // (Icons.chat_bubble_outline, 'Feedback', null),
+      (Icons.inventory_2_outlined, 'History', AppRoutes.paymentHistory),
       (Icons.chat_bubble_outline, 'Requests', AppRoutes.requestList),
       (Icons.inventory_2_outlined, 'Parcels', null),
     ];
@@ -479,7 +481,8 @@ class Body extends StatelessWidget {
                     ),
                   ),
                   TextButton(
-                    onPressed: () => Navigator.pushNamed(context, AppRoutes.notifications),
+                    onPressed: () =>
+                        Navigator.pushNamed(context, AppRoutes.notifications),
                     child: const Text(
                       'View All',
                       style: TextStyle(
@@ -496,19 +499,24 @@ class Body extends StatelessWidget {
               SizedBox(
                 height: 128,
                 child: notifs.isEmpty
-                  ? Center(child: Text('No notifications', style: TextStyle(color: Colors.grey.shade400)))
-                  : ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      itemCount: notifs.length,
-                      separatorBuilder: (_, __) => const SizedBox(width: 12),
-                      itemBuilder: (_, i) =>
-                          _buildNotifCard(notifs[i].title, notifs[i].content),
-                    ),
+                    ? Center(
+                        child: Text(
+                          'No notifications',
+                          style: TextStyle(color: Colors.grey.shade400),
+                        ),
+                      )
+                    : ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: notifs.length,
+                        separatorBuilder: (_, __) => const SizedBox(width: 12),
+                        itemBuilder: (_, i) =>
+                            _buildNotifCard(notifs[i].title, notifs[i].content),
+                      ),
               ),
             ],
           ),
         );
-      }
+      },
     );
   }
 
@@ -626,10 +634,7 @@ class Body extends StatelessWidget {
                               title: const Text('Update Profile'),
                               onTap: () {
                                 Navigator.pop(context);
-                                Navigator.pushNamed(
-                                  context,
-                                  AppRoutes.profile,
-                                );
+                                Navigator.pushNamed(context, AppRoutes.profile);
                               },
                             ),
                             ListTile(
