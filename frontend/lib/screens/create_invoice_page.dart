@@ -1009,123 +1009,146 @@ class _CreateInvoicePageState extends State<CreateInvoicePage>
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
+      constraints: BoxConstraints(
+        maxHeight: MediaQuery.of(context).size.height * 0.6,
+      ),
       builder: (_) => Container(
         decoration: const BoxDecoration(
           color: _white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: _greyLight,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              'Select Service',
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
-                fontFamily: 'Inter',
-                color: _darkDeep,
-              ),
-            ),
-            const SizedBox(height: 4),
-            const Text(
-              'Tap to add to invoice',
-              style: TextStyle(fontSize: 12, color: _grey, fontFamily: 'Inter'),
-            ),
-            const SizedBox(height: 16),
-            ...available.map(
-              (svc) => GestureDetector(
-                onTap: () {
-                  _addService(svc);
-                  Navigator.pop(context);
-                },
-                child: Container(
-                  margin: const EdgeInsets.only(bottom: 8),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: _sand,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: _greyLight),
+            // Header cố định — không cuộn
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: _greyLight,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          _serviceIcon(svc.serviceName),
-                          color: _primary,
-                          size: 18,
-                        ),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Select Service',
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      fontFamily: 'Inter',
+                      color: _darkDeep,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Tap to add to invoice',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: _grey,
+                      fontFamily: 'Inter',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            // List cuộn được khi có nhiều service
+            Flexible(
+              child: ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                shrinkWrap: true,
+                itemCount: available.length,
+                itemBuilder: (_, i) {
+                  final svc = available[i];
+                  return GestureDetector(
+                    onTap: () {
+                      _addService(svc);
+                      Navigator.pop(context);
+                    },
+                    child: Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: _sand,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: _greyLight),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              svc.serviceName,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
-                                fontFamily: 'Inter',
-                                color: _darkDeep,
-                              ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: _primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            Text(
-                              svc.isFixed
-                                  ? 'Fixed: ${_formatVnd(svc.unitPrice.toInt())}'
-                                  : '${_formatVnd(svc.unitPrice.toInt())} / ${svc.unit ?? 'unit'}',
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: _grey,
-                                fontFamily: 'Inter',
-                              ),
+                            child: Icon(
+                              _serviceIcon(svc.serviceName),
+                              color: _primary,
+                              size: 18,
                             ),
-                          ],
-                        ),
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 3,
-                        ),
-                        decoration: BoxDecoration(
-                          color: svc.isFixed
-                              ? const Color(0xFFE0E7FF)
-                              : _primary.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: Text(
-                          svc.isFixed ? 'Fixed' : svc.serviceType,
-                          style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w600,
-                            color: svc.isFixed
-                                ? const Color(0xFF4338CA)
-                                : _primary,
                           ),
-                        ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  svc.serviceName,
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                    fontFamily: 'Inter',
+                                    color: _darkDeep,
+                                  ),
+                                ),
+                                Text(
+                                  svc.isFixed
+                                      ? 'Fixed: ${_formatVnd(svc.unitPrice.toInt())}'
+                                      : '${_formatVnd(svc.unitPrice.toInt())} / ${svc.unit ?? 'unit'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: _grey,
+                                    fontFamily: 'Inter',
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: svc.isFixed
+                                  ? const Color(0xFFE0E7FF)
+                                  : _primary.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: Text(
+                              svc.isFixed ? 'Fixed' : svc.serviceType,
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: svc.isFixed
+                                    ? const Color(0xFF4338CA)
+                                    : _primary,
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
+                    ),
+                  );
+                },
               ),
             ),
           ],
