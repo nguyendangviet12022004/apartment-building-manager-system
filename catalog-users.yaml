@@ -1,0 +1,23 @@
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: john-doe
+spec:
+  profile:
+    displayName: John Doe
+    email: john.doe@company.com
+    picture: https://avatars.company.com/john-doe
+  memberOf:
+    - artist-relations-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: jane-smith
+spec:
+  profile:
+    displayName: Jane Smith
+    email: jane.smith@company.com
+    picture: https://avatars.company.com/jane-smith
+  memberOf:
+    - artist-relations-team
