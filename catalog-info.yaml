@@ -14,3 +14,54 @@ spec:
     - component:default/artist-web-lookup
   providesApis:
     - artist-api
+---
+apiVersion: backstage.io/v1alpha1
+kind: Resource
+metadata:
+  name: artists-db
+  description: Primary database for artist information and building management
+spec:
+  type: database
+  lifecycle: production
+  owner: artist-relations-team
+  system: artist-engagement-portal
+---
+apiVersion: backstage.io/v1alpha1
+kind: Group
+metadata:
+  name: artist-relations-team
+  description: Team responsible for managing artist relations and apartment building operations
+spec:
+  type: team
+  profile:
+    displayName: Artist Relations Team
+    email: artist-relations@company.com
+  parent: root
+  children: []
+  members:
+    - user:default/john-doe
+    - user:default/jane-smith
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: john-doe
+spec:
+  profile:
+    displayName: John Doe
+    email: john.doe@company.com
+    picture: https://avatars.company.com/john-doe
+  memberOf:
+    - artist-relations-team
+---
+apiVersion: backstage.io/v1alpha1
+kind: User
+metadata:
+  name: jane-smith
+spec:
+  profile:
+    displayName: Jane Smith
+    email: jane.smith@company.com
+    picture: https://avatars.company.com/jane-smith
+  memberOf:
+    - artist-relations-team
